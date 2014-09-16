@@ -1,11 +1,12 @@
 ANTONOV SUIT
 A physical based shading system for Unity 4
-by Charles Greivelding Thomas
+by Charles Greivelding Thomas - http://www.charles-greivelding.com/
 
 REQUIREMENTS
 
 Antonov Suit needs Unity Free or Pro and version 4.5 or newer.
 Antonov Suit Shaders needs a shader model 3.0 ( dx9 ) graphic card to run.
+To give the best result your project needs to be setup in linear space.
 
 GITHUB INSTALLATION
 
