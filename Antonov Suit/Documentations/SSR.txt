@@ -27,12 +27,12 @@ PARAMETERS
 	
 	DOBLUR
 	
-	This will slightly blur the reflection result Antonov Suit Screen Space Reflection.
+	This will slightly blur the reflection result of Antonov Suit Screen Space Reflection.
 
 	REFLECTION INTENSITY
 	
-	Antonov Suit Screen Space Reflection is calibrated but somtimes you will maybe want to tune up or down the reflection. 
+	Antonov Suit Screen Space Reflection is calibrated but sometimes you will maybe want to tune up or down the reflection. 
 	
 	MAX ROUGHNESS
 	
-	Basically this option defines the range (0-1) of roughness that Antonov Suit Screen Space Reflection can use. It helps to reduce the value when you fell that the reflection is too noisy.
+	Basically this option defines the range (0-1) of roughness that Antonov Suit Screen Space Reflection can use. It helps to reduce the value when you reflection is too noisy.
