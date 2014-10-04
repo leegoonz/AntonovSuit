@@ -12,6 +12,7 @@ Fixed Skin point/spot light red gradient
 Changed convolution code
 Changed Lod calculation for convolution
 
+Moved Alpha to _MainTex see _Readme for infos
 
 v0.044
 
