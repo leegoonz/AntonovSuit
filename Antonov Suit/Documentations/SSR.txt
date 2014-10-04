@@ -1,0 +1,38 @@
+ANTONOV SUIT
+A physical based shading system for Unity 4
+by Charles Greivelding Thomas - http://www.charles-greivelding.com/
+
+SCREEN SPACE REFLECTION
+
+Antonov Suit Screen Space Reflection provide an accurate dynamic reflection of your environement and works seamlessly with the Metallic, Specular and Skin workflow.
+
+HOW TO USE IT
+
+Select your camera then go to your component menu and search for "Screen Space Reflection" in "Antonov Suit/Rendering/Screen Space Reflection". This will add the script to your camera.
+Make sure HDR is turned on on your camera and it should always placed before any tonemapper effect.
+
+PARAMETERS
+
+	ISDEBUG
+	
+	This will display the G-Bufer texture used by Antonov Suit Screen Space Reflection.
+
+	JITTER
+
+	In order to work you need to add "NOISE_128X128_JITTER.tga" in the Jitter texture slot of the script.
+	
+	USESSR
+	
+	This will activate Antonov Suit Screen Space Reflection.
+	
+	DOBLUR
+	
+	This will slightly blur the reflection result Antonov Suit Screen Space Reflection.
+
+	REFLECTION INTENSITY
+	
+	Antonov Suit Screen Space Reflection is calibrated but somtimes you will maybe want to tune up or down the reflection. 
+	
+	MAX ROUGHNESS
+	
+	Basically this option defines the range (0-1) of roughness that Antonov Suit Screen Space Reflection can use. It helps to reduce the value when you fell that the reflection is too noisy.

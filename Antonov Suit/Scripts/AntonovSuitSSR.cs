@@ -2,7 +2,7 @@
 using System.Collections;
 
 //[ExecuteInEditMode]
-[AddComponentMenu("Antonov Suit/Rendering/Antonov Renderer")]
+[AddComponentMenu("Antonov Suit/Rendering/Screen Space Reflection")]
 
 
 public class AntonovSuitSSR : MonoBehaviour
@@ -41,7 +41,7 @@ public class AntonovSuitSSR : MonoBehaviour
 	private RenderTexture rtSSR;
 	private Material m_SSR;
 
-	public Shader rendererShader = null;
+	//public Shader rendererShader = null;
 	static Material m_rendererMaterial = null;
 	protected Material rendererMaterial
 	{
@@ -49,7 +49,7 @@ public class AntonovSuitSSR : MonoBehaviour
 		{
 			if (m_rendererMaterial == null) 
 			{
-				m_rendererMaterial = new Material(rendererShader);
+				m_rendererMaterial = new Material(Shader.Find("Hidden/Antonov Suit/SSR"));
 				m_rendererMaterial.hideFlags = HideFlags.DontSave;
 			}
 			return m_rendererMaterial;
