@@ -1,0 +1,121 @@
+v0.045, 046, 047, 048, 049
+
+Added documentations
+Added Quixel Suit profile
+Added SSR
+
+Fixed Cutoff not working in DX11
+Fixed casting shadows with self-illum shaders
+Fixed SSR for DX9
+Fixed Skin point/spot light red gradient
+
+Changed convolution code
+Changed Lod calculation for convolution
+
+
+v0.044
+
+fixed errors with build
+
+v0.043
+
+added exposure control for diffuse and specular cubemap ( request )
+added preview sphere for cubemap
+added edge scale bleeding for smoothedge ( DX9 )
+added three type of convolution for diffuse cubemap
+added view dependent roughness ( see GDC FOX Engine )
+added edge fix for dx9 in shader ( as a test )
+
+fixed black edge in the lookup texture generator
+fixed G_smith model in the lookup texture generator 
+
+changed samples amount for a quality setting for convolution
+changed cubemap size for a fixed size choice
+changed exponent math for GGX cubemap to match more the importance sampling reference
+changed skybox convolution projection
+changed smooth edge to wokr only on DX9 as DX11 use its own edge fix
+changed fresnel for cubemap with lookup texture ( D_GGX and G_Smith used as default now )
+
+removed #pragma_multi_compil for convolution type and moved to different shader instead
+
+improved convolution speed ( a bit )
+
+v0.042
+
+added specular workflow
+added toksvig factor parameter in shader
+
+changed sphere projection code ( Nvidia approach )
+changed material path for specular and mettalic workflow.
+
+fixed occlusion on direct specular
+
+removed skin atten shadows from point and spot light in the Pre Integrated Skin
+
+v0.041
+
+added sqrt(roughness); roughness* roughness; which gives better reponse in low range. The Order 1886
+
+added Rea skybox shader
+added logo to the probe tool
+added "Bake With IBL" to allow IBL capture
+
+refactored probe tool GUI
+
+fixed DX11 flip upside down capture
+fixed Z Up vetor in the importance sampling shader
+fixed mip map lod math
+
+
+changed "Reflection" and "Irradiance" shader name to "Hidden/Antonov Suit/Radiance" and to "Hidden/Antonov Suit/Irradiance"
+
+
+v0.04
+
+added box and sphere projection
+added attenuation control for box and sphere projection ( experimental )
+added burley diffuse model ( use ANTONOV_DIFFUSE_BURLEY instead of ANTONOV_DIFFUSE_LAMBERT )
+
+changed fresnel for Skin PreIntegrated shader
+
+removed fresnel lut for a math fresnel ( as a test )
+
+fixed serialized enum being reset when changing values in the probe tool
+
+v0.036
+
+fixed "unexpected token '&&'"
+
+v0.035
+
+refactored some lines of code
+
+changed exponent calculation for convolution
+changed lightmap attenuation for cubemap to match dielectric and metallic behavior
+
+fixed sharp transition in the cubemap mip map
+fixed problem with point and spot light attenuation
+fixed a division by PI in the skin diffuse color
+
+
+v0.03
+
+added GPU based convolution for cubemap using importance sampling
+added GGX and Blinn-Phong specular model in the probe tool
+added toksvigAA ( as a TEST )
+
+v0.02
+
+added single and directionnal lightmap
+added importance sample amount control to probe tool
+
+changed RGBM encoding for unity free
+
+fixed issue with uint
+fixed issue with build : "Assets/Antonov Suit/Scripts/AntonovSuitProbe.cs(151,17): error CS0103: The name `EditorApplication' does not exist in the current context"
+fixed _Illum error while making lightmap with beast
+
+v0.01 
+
+Initial Version
+

@@ -9,11 +9,11 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 		_SpecColor ("Specular Color", Color) = (1, 1, 1, 1)   	
 		_Shininess("Roughness", Range (0.001,1)) = 1.0
 		_viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
-		_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
+		//_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
 		_SpecTex ("Specular (RGB)", 2D) = "white" {}	
 		
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
-		_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
+		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
 		
 		_RGBTex ("Alpha (R), Roughness (G), Occlusion (B)", 2D) = "white" {}
 		
@@ -39,7 +39,11 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 		
 		CGINCLUDE
 		#pragma target 3.0
-		#pragma glsl
+		
+		#ifdef SHADER_API_OPENGL	
+			#pragma glsl
+		#endif
+		
 		#pragma vertex vert
 		#pragma fragment frag
 		#pragma only_renderers d3d9 opengl d3d11
@@ -50,11 +54,16 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
 		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
 		
+		// Workflow
 		#define ANTONOV_WORKFLOW_SPECULAR
+		
+		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT
-		#define ANTONOV_TOKSVIG
-		#define ANTONOV_HORYZON_OCCLUSION
-		#define ANTONOV_ILLUM
+		
+		// Optional features
+		//#define ANTONOV_TOKSVIG
+		//#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		//#define ANTONOV_HORYZON_OCCLUSION
 
 		#include "../AntonovSuitInput.cginc"
 		#include "../AntonovSuitLib.cginc"
@@ -103,5 +112,5 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 			ENDCG
 		}
 	}
-	FallBack "Diffuse"
+	FallBack "Antonov Suit/Specular Workflow/Specular"
 }

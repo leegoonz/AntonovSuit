@@ -2,7 +2,7 @@
 {
 	Properties 
 	{
-		_diffSamples("Specular Samples", float) = 256
+		_diffSamples("Diffuse Samples", float) = 256
 		_diffuseSize("Diffuse Cube Size", float) = 256
 		_DiffCubeIBL ("Diffuse Cube", Cube) = "black" {}
 	}
@@ -33,4 +33,5 @@
 			ENDCG
 		}
 	}
+FallBack Off
 }

@@ -14,7 +14,9 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		_BumpLod ("Skin Softness", Range (0,1)) = 1.0
 		_tuneCurvature ( "Skin Scattering", Range (0,1)) = 0.2
 		_SKIN_LUT ("Skin BRDF LUT", 2D) = "" {}
-		 	
+		_backScatteringColor("Back Scattering Color", Color) = (.25, 0, 0, 1)   
+		_backScatteringSize("Back Scattering Roughness", Range (0.01,1)) = 0.01
+				
 		_Shininess("Roughness", Range (0.01,1)) = 1.0
 			
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
@@ -23,7 +25,7 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 			
 		_cavityAmount ("Cavity Amount", Range (0,1)) = 1.0
 		
-		_RGBSkinTex ("Cavity (R), Curvature (G), Thickness (B)", 2D) = "white" {}
+		_RGBSkinTex ("Cavity (R), Scattering Deepness (G), Thickness (B)", 2D) = "white" {}
 		
 		
 		_BumpMap ("Normal", 2D) = "bump" {}
@@ -48,7 +50,11 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		
 		CGINCLUDE
 		#pragma target 3.0
-		#pragma glsl
+		
+		#ifdef SHADER_API_OPENGL	
+			#pragma glsl
+		#endif
+		
 		#pragma vertex vert
 		#pragma fragment frag
 		#pragma only_renderers d3d9 opengl d3d11
@@ -57,9 +63,16 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 
 		//ANTONOV SUIT STUFF
 		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
+		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
 		
+		// Workflow
 		#define ANTONOV_SKIN
-		#define ANTONOV_TOKSVIG
+		#define ANTONOV_BACKSCATTERING
+		
+		// Optional features
+		//#define ANTONOV_TOKSVIG
+		//#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		//#define ANTONOV_HORYZON_OCCLUSION
 
 		#include "AntonovSuitInput.cginc"
 		#include "AntonovSuitLib.cginc"
@@ -104,7 +117,6 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 			#include "Lighting.cginc"
 
 			//ANTONOV SUIT STUFF		
-			#define ANTONOV_FWDBASE
 			
 			#include "AntonovSuitFrag.cginc"
 			
@@ -112,5 +124,5 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		}
 	
 	}
-	FallBack "Diffuse"
+	FallBack "Antonov Suit/Metallic Workflow/Dielectric"
 }

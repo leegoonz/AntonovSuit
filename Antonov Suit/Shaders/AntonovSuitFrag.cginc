@@ -1,24 +1,27 @@
 // Created by Charles Greivelding
-			
-			
-			inline void DecodeDirLightmap(half3 normal, float4 colorLM, float4 scaleLM, out half3 lightColor, out half3 lightDir)
-			{
-				UNITY_DIRBASIS
-				half3 scalePerBasisVector;
+			#ifdef LIGHTMAP_ON
+				inline void DecodeDirLightmap(half3 normal, float4 colorLM, float4 scaleLM, out half3 lightColor, out half3 lightDir)
+				{
+					UNITY_DIRBASIS
+					half3 scalePerBasisVector;
 
-				lightColor = DirLightmapDiffuse (unity_DirBasis, colorLM, scaleLM, normal,true,scalePerBasisVector);
-				lightDir = normalize (scalePerBasisVector.x * unity_DirBasis[0] + scalePerBasisVector.y * unity_DirBasis[1] + scalePerBasisVector.z * unity_DirBasis[2]);
-			}
+					lightColor = DirLightmapDiffuse (unity_DirBasis, colorLM, scaleLM, normal,true,scalePerBasisVector);
+					lightDir = normalize (scalePerBasisVector.x * unity_DirBasis[0] + scalePerBasisVector.y * unity_DirBasis[1] + scalePerBasisVector.z * unity_DirBasis[2]);
+				}
+			#endif
 			
 			struct v2f 
 			{
 			    float4	pos 		: POSITION;
-			    float3	lightDir	: TEXCOORD0;
+			    float4	lightDir	: TEXCOORD0;
+			    //float4  screenPos	: TEXCOORD0;
 			    float3	normal		: TEXCOORD1;
 			    float4	worldPos	: TEXCOORD2;
 			    float2	uv			: TEXCOORD3;
-			    float3	lightmap	: TEXCOORD4;
-			    LIGHTING_COORDS(5,6)
+			    #ifdef LIGHTMAP_ON
+			   		float3	lightmap	: TEXCOORD4;
+			    #endif
+				LIGHTING_COORDS(5,6)
 				float3 	TtoW0		: TEXCOORD7;
 				float3 	TtoW1		: TEXCOORD8;
 				float3 	TtoW2		: TEXCOORD9;
@@ -30,7 +33,8 @@
 			    o.pos = mul(UNITY_MATRIX_MVP, v.vertex);
 			   	o.worldPos = mul(_Object2World, v.vertex);
 			   	o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
-			   	o.lightDir = mul(_Object2World,float4(ObjSpaceLightDir(v.vertex),0));
+			   	o.lightDir = float4(WorldSpaceLightDir(v.vertex), 0);
+			   	//o.screenPos = ComputeScreenPos(o.pos);
 			    o.normal =  mul(_Object2World, float4(v.normal, 0)).xyz;
 			    TANGENT_SPACE_ROTATION;
 				o.TtoW0 = mul(rotation, _Object2World[0].xyz * unity_Scale.w);
@@ -61,39 +65,66 @@
 			
 			    //float2 screenCoord = i.screenPos.xy / i.screenPos.w;
 			    
-			    //ALPHA
-				half alpha = tex2D(_RGBTex, uv_metallic).a;
-				
-				#ifdef ANTONOV_WORKFLOW_SPECULAR
-					alpha = tex2D(_RGBTex, uv_metallic).r;
-				#endif
-					
-			    
+			   // #if UNITY_UV_STARTS_AT_TOP
+				//if (_MainTex_TexelSize.y < 0)
+				       // screenCoord.y = 1-screenCoord.y;
+
+				//#endif
+
 			    //METALLIC
-				half metallic = tex2D(_RGBTex, uv_metallic).x;
+				#ifdef ANTONOV_WORKFLOW_METALLIC
+					half metallic = tex2D(_RGBTex, uv_metallic).x;
+					metallic = metallic*metallic; // To sRGB
+			    #endif
 			    
 			    //OCCLUSION
 				half occlusion = half(1.0f);
 			
 				occlusion = tex2D( _RGBTex, uv_occlusion ).z;
+				occlusion = occlusion*occlusion; // To sRGB
+				
 				occlusion = lerp(white,occlusion,_occlusionAmount);
 			
 			    float4 worldPos = i.worldPos;
 			    
-			    half3 viewDir = normalize( i.worldPos - _WorldSpaceCameraPos );
+			    half3 viewDir = normalize(i.worldPos - _WorldSpaceCameraPos);
 			  
 			    half3 lightColor = _LightColor0.rgb * 2;
+			    
 				half3 lightDir = normalize(i.lightDir);
-
 				half atten = LIGHT_ATTENUATION(i);
-
+				
+				//float distanceSquare = dot( i.lightDir, i.lightDir );
+				//float distanceAttenuation = 1 / ( distanceSquare + 1 );
+				
+				//#ifdef ANTONOV_FWDBASE
+				//half atten = LIGHT_ATTENUATION(i);
+				//#else
+				//half atten = sqr( saturate( 1 - sqr( distanceSquare * sqr(i.lightDir.w + 0.5) ) ) ) * distanceAttenuation;
+				//#endif
+				
+				//half4 lightDir = half4(0,0,0,0);
+				//half atten = SHADOW_ATTENUATION(i);
+				//if (0.0 == _WorldSpaceLightPos0.w) 
+		        //{
+		       		//lightDir = normalize(_WorldSpaceLightPos0);
+		        //} 
+		        //else
+		        //{
+					//half4 lightPos = _WorldSpaceLightPos0 - worldPos;
+					//lightDir = normalize(lightPos);
+		        //}
+				
 			    //BASE COLOR
 				half4 baseColor = tex2D(_MainTex, uv_base);
 				baseColor.rgb *= _Color.rgb;
 				
+				//ALPHA
+				half alpha = baseColor.a * _Color.a;
+				
 				//ROUGHNESS
-				half roughness = sqrt(tex2D(_RGBTex, uv_metallic).y);
-				roughness = roughness*roughness;
+				half roughness = tex2D(_RGBTex, uv_metallic).y;
+				//roughness = roughness*roughness;
 				roughness *= _Shininess;
 				
 				//CAVITY
@@ -118,16 +149,18 @@
 				worldNormal.x = dot(i.TtoW0, normal);
 				worldNormal.y = dot(i.TtoW1, normal);
 				worldNormal.z = dot(i.TtoW2, normal);
-			
-				worldNormal = normalize(worldNormal);
 				
+				#ifdef ANTONOV_GBUFFER_WORLDNORMAL
+					worldNormal = worldNormal * 0.5 + 0.5;
+					return float4(worldNormal,1);
+				#else
+					worldNormal = normalize(worldNormal);
+				#endif
+
 				//VERTEX NORMAL
 				#ifdef ANTONOV_SKIN
-					float3 worldVertexNormal = float3(0,0,0);
-					worldVertexNormal.x = dot(i.TtoW0, vertexNormal);
-					worldVertexNormal.y = dot(i.TtoW1, vertexNormal);
-					worldVertexNormal.z = dot(i.TtoW2, vertexNormal);
-				
+					float3 worldVertexNormal = i.normal;
+
 					worldVertexNormal = normalize(worldVertexNormal);
 					
 					float3 blurredNormal = lerp(worldNormal,worldVertexNormal,_BumpLod);
@@ -162,37 +195,36 @@
 						lightDir = normalize(lightDir);		
 						attenuatedLight = max(min(lightColor, atten * lightmapColor.rgb), atten * lightColor);				
 					#endif
-					
 				#endif
 				
 				//VECTORS
 				#ifdef ANTONOV_SKIN
 					float3 h = -viewDir + lightDir;	
 					half3 halfVector = normalize(h);
-					half HalfLambert = saturate( dot( worldNormal, lightDir ) * 0.5 + 0.5 );
+					half HalfLambert = saturate(dot( worldNormal, lightDir) * 0.5 + 0.5 );
 				#else
-					half3 halfVector = normalize(-viewDir+lightDir);
+					half3 halfVector = normalize(-viewDir + lightDir);
 				#endif
 				
-				half NdotL = saturate( dot( worldNormal, lightDir ) );
-				half NdotV = saturate( dot( worldNormal, -viewDir ) );
-				half NdotH = saturate( dot( worldNormal, halfVector ) );
-				half LdotH = saturate( dot( lightDir, halfVector ) );
-				half VdotH = saturate( dot( -viewDir, halfVector ) );
-				
-					
+				half NdotL = saturate(dot(worldNormal, lightDir));
+				half NdotV = saturate(dot(worldNormal, -viewDir));
+				half NdotH = saturate(dot(worldNormal, halfVector));
+				half LdotH = saturate(dot(lightDir, halfVector));
+				half VdotH = saturate(dot(-viewDir, halfVector));
+							
 				//SHADOWS
 				#ifdef ANTONOV_SKIN
-					float3 skinShadow = tex2D( _SKIN_LUT,float2(atten,.9999));
+					float3 skinShadow = atten; //TO FIX !!!
+					//float3 skinShadow = tex2D(_SKIN_LUT,float2(atten,.9999));
 				#endif
 				
-				//VIEW DEPENDENT ROUGHNESS				
-				roughness = lerp( 0.0, roughness, NdotV) * _viewDpdtRoughness + roughness * ( 1 - _viewDpdtRoughness );
-				
-				roughness =  max(roughness,0.01);
+				//VIEW DEPENDENT ROUGHNESS
+				#ifdef ANTONOV_VIEW_DEPENDENT_ROUGHNESS		
+					roughness = lerp(0.0, roughness, NdotV) * _viewDpdtRoughness + roughness * (1 - _viewDpdtRoughness);
+				#endif
 				
 				//ROUGHNESS AA
-				float roughnessAA = roughness;
+				float roughnessAA = max(roughness,0.05);
 				
 				#ifdef ANTONOV_TOKSVIG
 					float normalMapLen = length(tex2D(_BumpMap, uv_bump)*2-1);
@@ -201,10 +233,14 @@
 					float ft = normalMapLen / lerp(s, 1.0f, normalMapLen);
 	                ft = max(ft, 0.01f);
 	                
-	                roughnessAA = SpecPowerToRoughness(ft * s) * _toksvigFactor + roughness * ( 1 - _toksvigFactor );
+	                roughnessAA = SpecPowerToRoughness(ft * s) * _toksvigFactor + roughness * (1 - _toksvigFactor);
                 #endif
 				
-				float4 frag = float4(0,0,0, alpha * _Color.a );
+				float4 frag = float4(0, 0, 0, alpha);
+				
+				#ifdef SHADER_API_D3D11
+					clip(alpha - _Cutoff);
+				#endif
 
 				//DIFFUSE
 				half4 diffuse = baseColor;
@@ -229,11 +265,11 @@
 				#endif
 					
 				#ifdef ANTONOV_DIFFUSE_BURLEY
-					diffuseDirect = Burley(NdotL, NdotV, VdotH, roughness );
+					diffuseDirect = Burley(NdotL, NdotV, VdotH, roughness);
 				#endif
 				  
 				#ifdef ANTONOV_SKIN
-					diffuseDirect = PennerSkin( float3( _tuneSkinCoeffX,_tuneSkinCoeffY,_tuneSkinCoeffZ ), worldNormal,lightDir, blurredNormal, curvature, _SKIN_LUT, atten );
+					diffuseDirect = PennerSkin(float3(_tuneSkinCoeffX,_tuneSkinCoeffY,_tuneSkinCoeffZ ), worldNormal,lightDir, blurredNormal, curvature, _SKIN_LUT, atten);
 				#endif
 				
 				#ifdef ANTONOV_SKIN
@@ -266,16 +302,24 @@
 					half4 specularDielectric = half4(0.04,0.04,0.04,1);
 					specular = lerp(specularDielectric,specular,metallic);
 				#endif
+				
+				#ifdef ANTONOV_GBUFFER_SPECULAR
+					return float4(specular.rgb,roughnessAA);
+				#endif
 
 				#ifdef ANTONOV_SKIN
 					half D = D_Beckmann(roughness, NdotH);
 					half G = 1;
-				#else
+				#endif
+				
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					half D = D_GGX(roughnessAA, NdotH);
 					half G = G_GGX(roughnessAA, NdotL, NdotV);
 				#endif
-
-				half3 F = F_Schlick( specular, LdotH );
+				
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
+					half3 F = F_Schlick(specular, LdotH);
+				#endif
 				
 				#ifdef LIGHTMAP_ON
 					#ifdef ANTONOV_DIELECTRIC
@@ -287,20 +331,24 @@
 				#endif
 				
 				#ifdef ANTONOV_SKIN
-					half3 specularDirect = max( D * F / dot( h, h ), 0 ) * NdotL * attenuatedLight;
-				#else
+					half3 specularDirect = max(D * F / dot(h, h), 0) * NdotL * attenuatedLight;
+				#endif
+					
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					half3 specularDirect = D * G * F * NdotL * attenuatedLight;
 				#endif		
 
 				//SPECULAR IBL
-				half3 specularIBL = ApproximateSpecularIBL( specular.rgb, roughness, worldNormal, -viewDir, i.worldPos, i.normal ) * _exposureIBL.x;
-				//half horyzon = saturate( 1 + _horyzonOcclusion * specularOcclusion(i.normal, -viewDir, occlusion) );
-				//specularIBL *= specularOcclusion(i.normal, -viewDir, occlusion);
-		
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
+					half3 specularIBL = ApproximateSpecularIBL(specular.rgb, roughness, worldNormal, -viewDir, i.worldPos, i.normal) * _exposureIBL.x;
+				#endif
+				
 				//DIFFUSE IBL
 				#ifdef ANTONOV_SKIN
 					half3 diffuseIBL = diffuseSkinIBL(float3(_tuneSkinCoeffX, _tuneSkinCoeffY, _tuneSkinCoeffZ), ApproximateDiffuseIBL(worldNormal).rgb, ApproximateDiffuseIBL(blurredNormal).rgb) * _exposureIBL.y;
-				#else
+				#endif
+				
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					half3 diffuseIBL = ApproximateDiffuseIBL(worldNormal) * _exposureIBL.y;
 				#endif
 				
@@ -311,12 +359,24 @@
 				//half3 ambient = lerp(_groundColor, _skyColor + ambientIBL,topLighting);
 			
 				half3 ambientProbe = ShadeSH9(float4(worldNormal,1));
-			
+				
+				float3 backScattering = float3(0,0,0);
+				#ifdef ANTONOV_BACKSCATTERING
+					float translucency =  tex2D(_RGBSkinTex, uv_base).z;
+					
+					half backRoughness = exp2( 8 * _backScatteringSize + 1); 
+					backScattering = exp2(saturate(dot(-viewDir, -(lightDir + (  worldNormal * 0.01)))) * backRoughness - backRoughness) * ( backRoughness / 8 );
+					backScattering += saturate( dot( -lightDir, worldNormal ) * 0.5 + 0.5 );
+					backScattering *= _backScatteringColor * translucency * attenuatedLight;
+				#endif
 											
 				#ifdef LIGHTMAP_ON
-					// We normalize the cubemap with lightmap here.
-					diffuseIBL *= attenuatedLight;
-					specularIBL *= attenuatedLight;
+					#ifdef  ANTONOV_INFINITE_PROJECTION
+						// We normalize the cubemap with lightmap here for infinite projection.
+						diffuseIBL *= attenuatedLight;
+						specularIBL *= attenuatedLight;
+					#endif
+
 				#endif
 
 				#ifdef ANTONOV_METALLIC
@@ -330,24 +390,37 @@
 					diffuse.rgb *= saturate(1.0f - specular); // We balance the diffuse with specular intensity, The Order 1886
 				#endif
 				
-				#ifdef ANTONOV_FWDBASE
-					frag.rgb = ( diffuseDirect + diffuseIBL + ambient ) * diffuse * occlusion;
-
-					frag.rgb += ( specularDirect + specularIBL ) * occlusion;
-				#else	
-					frag.rgb = diffuseDirect * diffuse * occlusion;
-					
-					frag.rgb += specularDirect * occlusion;
+				#ifdef ANTONOV_SKIN
+					diffuse.rgb *= coloredOcclusion(diffuse, occlusion);
+				#else
+					diffuse.rgb *= occlusion;
 				#endif
-		
+				
+				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
+					#ifdef ANTONOV_FWDBASE
+						frag.rgb = (diffuseDirect + diffuseIBL + ambient) * diffuse;
+
+						frag.rgb += (specularDirect + specularIBL) * occlusion;
+						
+						frag.rgb += backScattering * occlusion;
+					#else	
+						frag.rgb = diffuseDirect * diffuse;
+						
+						frag.rgb += specularDirect * occlusion;
+						
+						frag.rgb += backScattering * occlusion;
+					#endif
+				#endif
 				#ifdef ANTONOV_ILLUM
 				//ILLUM
-					half3 illum = tex2D( _Illum, uv_base );
-					half3 illumColor = half3( _illumColorR, _illumColorG, _illumColorB );
-					illum = lerp( half3( 0.0, 0.0,0.0 ), illum * illumColor, _illumStrength );
+					half3 illum = tex2D(_Illum, uv_base);
+					half3 illumColor = half3(_illumColorR, _illumColorG, _illumColorB);
+					illum = lerp(half3(0.0, 0.0, 0.0), illum * illumColor, _illumStrength);
 					
 					frag.rgb += illum;
 				#endif
 				
+
+
 				return frag;
 			}

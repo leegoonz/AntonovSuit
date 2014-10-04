@@ -72,10 +72,12 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 	Vector3 ImportanceSampleGGX(Vector2 Xi, float Roughness)
 	{
 
-		float a = Roughness;
+		//float m = Roughness;
+		float m = Roughness * Roughness;
+		float m2 = m*m;
 
 		float phi = 2 * Mathf.PI * Xi.x;
-		float cosTheta = Mathf.Sqrt( (1 - Xi.y) / ( 1 + (a*a - 1) * Xi.y) );
+		float cosTheta = Mathf.Sqrt( (1 - Xi.y) / ( 1 + (m2 - 1) * Xi.y) );
 		float sinTheta = Mathf.Sqrt(1 - cosTheta * cosTheta);
 
 		Vector3 H = new Vector3(sinTheta * Mathf.Cos(phi), sinTheta * Mathf.Sin(phi), cosTheta);
@@ -102,7 +104,7 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 	float G_Schlick(float Roughness, float NdotV, float NdotL)
 	{
 
-		float m = Roughness;
+		float m = Roughness * Roughness;
 
 		return (NdotV * NdotL) / ( (NdotV * (1 - m) + m) * (NdotL * (1 - m) + m) );
 	}
@@ -110,19 +112,19 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 	float G_Smith( float Roughness, float NoV, float NoL )
 	{
 		float m = Roughness;
+		//float m = Roughness*Roughness;
+		float m2 = m*m;
 		
-		float G_SmithV = NoV + Mathf.Sqrt( NoV * (NoV - NoV * m) + m );
-		float G_SmithL = NoL + Mathf.Sqrt( NoL * (NoL - NoL * m) + m );
+		float G_SmithV = NoV + Mathf.Sqrt( NoV * (NoV - NoV * m2) + m2 );
+		float G_SmithL = NoL + Mathf.Sqrt( NoL * (NoL - NoL * m2) + m2 );
 
 		return  1 / G_SmithV * G_SmithL;
 	}
 
-	Vector2 IntegrateBRDF(float NoV, float roughness)
+	Vector2 IntegrateBRDF(float NoV, float Roughness)
 	{
 
 		Vector3 V = new Vector3(Mathf.Sqrt( 1.0f - NoV * NoV ), 0, NoV);
-
-		float m = roughness*roughness;
 
 		float A = 0;
 		float B = 0;
@@ -136,11 +138,11 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 
 			if( D_Model == D_Enum.D_GGX )
 			{
-				H = ImportanceSampleGGX( Xi, m);
+				H = ImportanceSampleGGX( Xi, Roughness);
 			}
 			if( D_Model == D_Enum.D_Blinn )
 			{
-				H = ImportanceSampleBlinn( Xi, m);
+				H = ImportanceSampleBlinn( Xi, Roughness);
 			}
 
 			Vector3 L = 2 * Vector3.Dot( V, H ) * H - V;
@@ -153,7 +155,7 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 			{
 				if( G_Model == G_Enum.G_Schlick )
 				{
-					float G = G_Schlick( m, NoV, NoL );
+					float G = G_Schlick( Roughness, NoV, NoL );
 					float G_Vis = G * VoH / (NoH * NoV);
 					float Fc = Mathf.Pow( 1.0f - VoH, 5.0f );
 					A += (1.0f - Fc) * G_Vis;
@@ -161,7 +163,7 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 				}
 				if( G_Model == G_Enum.G_Smith )
 				{
-					float G = G_Smith( m, NoV, NoL );
+					float G = G_Smith( Roughness, NoV, NoL );
 					float Fc = Mathf.Pow( 1.0f - VoH, 5.0f );
 					A += (1.0f - Fc) * G;
 					B += Fc * G;

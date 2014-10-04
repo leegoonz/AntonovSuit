@@ -6,15 +6,14 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		_Color ("Base Color", Color) = (1, 1, 1, 1)  
 		_MainTex ("Base (RGB)", 2D) = "white" {}
 		
-		_Shininess("Roughness", Range (0.001,1)) = 1.0
-		_Shininess("Roughness", float) = 1.0
+		_Shininess("Roughness", Range (0.01,1)) = 0.0
 		_viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
-		_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
+		//_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
 			
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
-		_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
+		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 0.0
 		
-		_RGBTex ("Roughness (G), Occlusion (B)", 2D) = "white" {}
+		_RGBTex ("Metallic (R), Roughness (G), Occlusion (B), Alpha (A)", 2D) = "white" {}
 			
 		_BumpMap ("Normal", 2D) = "bump" {}
 
@@ -31,7 +30,11 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		
 		CGINCLUDE
 		#pragma target 3.0
-		#pragma glsl
+		
+		#ifdef SHADER_API_OPENGL	
+			#pragma glsl
+		#endif
+		
 		#pragma vertex vert
 		#pragma fragment frag
 		#pragma only_renderers d3d9 opengl d3d11
@@ -42,17 +45,26 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
 		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
 		
+		// Workflow
 		#define ANTONOV_WORKFLOW_METALLIC
-		#define ANTONOV_METALLIC
-		#define ANTONOV_TOKSVIG
-		#define ANTONOV_HORYZON_OCCLUSION
 		
+		// Metallic workflow only, this define the type of the surface
+		#define ANTONOV_METALLIC
+		
+		// Direct diffuse lighting model
+		#define ANTONOV_DIFFUSE_LAMBERT
+		
+		// Optional features
+		//#define ANTONOV_TOKSVIG
+		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		//#define ANTONOV_HORYZON_OCCLUSION
+
 		#include "AntonovSuitInput.cginc"
 		#include "AntonovSuitLib.cginc"
 		#include "AntonovSuitBRDF.cginc"
 
 		ENDCG
-		
+
 		Pass 
 		{
 			Name "FORWARD" 

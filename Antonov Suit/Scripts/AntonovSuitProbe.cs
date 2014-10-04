@@ -221,6 +221,31 @@ public class AntonovSuitProbe : MonoBehaviour
 		return result;
 	}
 
+	int CubeLodSetup()
+	{
+		
+		int result= 0;
+
+		if(specularSize == facesSize._64)
+		{
+			result = 6;
+		}
+		if(specularSize == facesSize._128)
+		{
+			result  = 7;
+		}
+		if(specularSize == facesSize._256)
+		{
+			result  = 8;
+		}
+		if(specularSize == facesSize._512)
+		{
+			result  = 9;
+		}
+
+		return result;
+	}
+
 	int qualitySetup(bool isDiffuse)
 	{
 		
@@ -699,32 +724,20 @@ public class AntonovSuitProbe : MonoBehaviour
 		{
 
 			// v0.035 better way to get exponent with different cubemap size
-			float minExponent = 0.005f;
-
-			float exponent = Mathf.Max( (float)specularExponent / (float)size * (float)mip, minExponent );
+			float minExponent = 0.1f;
+			float stepExp = 1 / (float)specularExponent * (float)mip + 0.01f;
+			//float exponent = Mathf.Max( (float)specularExponent / (float)size * (float)mip, minExponent );
+			float exponent = Mathf.Max( stepExp, minExponent );
 
 			/*
-			float[] expVal = new float [] {
-				0.01f,0.1f,0.2f,0.3f,0.4f,0.5f,0.6f,0.7f,0.8f,0.9f,1.0f
+			float[] expVal = new float [] 
+			{
+				minExponent, 0.152f, 0.294f, 0.436f, 0.578f, 0.72f, 0.862f, 1.0f,
 			};
-
 			float exponent = expVal[mip];
-
-			convolveSpecularSkybox.SetFloat("_Shininess", exponent );
 			*/
 
-			if( mip == 0 )
-			{
-				convolveSpecularSkybox.SetFloat("_Shininess", minExponent);
-			}
-			if( mip != 0 && radianceModel == radianceEnum.GGX)
-			{
-				convolveSpecularSkybox.SetFloat("_Shininess", exponent + 0.05f);
-			}
-			if( mip != 0 && radianceModel == radianceEnum.BlinnPhong)
-			{
-				convolveSpecularSkybox.SetFloat("_Shininess", exponent);
-			}
+			convolveSpecularSkybox.SetFloat("_Shininess", exponent);
 
 			int cubeSize = Mathf.Max(1, tempCube.width >> mip );
 
@@ -897,14 +910,13 @@ public class AntonovSuitProbe : MonoBehaviour
 		}
 		#endif
 
-		int size = CubeSizeSetup(false);
+		//int size = CubeSizeSetup(false);
 
-		//Texture2D lodTest = new Texture2D(size,size);
+		//float lod =  Mathf.Log(size*size) - 2;
 
-		float lod =  Mathf.Log(size*size) - 2;
-		specularExponent = (int)lod;
+		int lod = CubeLodSetup();
 
-		//specularExponent = lodTest.mipmapCount;
+		specularExponent = lod;
 
 		cubePos = this.transform.position;
 
@@ -966,11 +978,6 @@ public class AntonovSuitProbe : MonoBehaviour
 				//this.m_materials = mr.renderer.materials;
 				foreach( Material mat in this.m_materials ) 
 				{
-	
-
-				
-
-
 					switch(typeOfProjection)
 					{
 						case ProjectionType.InfiniteProjection:

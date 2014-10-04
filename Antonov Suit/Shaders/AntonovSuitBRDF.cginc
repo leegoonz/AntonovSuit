@@ -22,6 +22,7 @@ inline float D_Beckmann( float Roughness, float NoH )
 {
 	float m = Roughness;
 	float m2 = m * m;
+	
 	float NdotH2 = sqr(NoH);
 	return exp( (NdotH2 - 1) / (m2 * NdotH2) ) / ( PI * m2 * NdotH2 * NdotH2 );
 }
@@ -29,8 +30,10 @@ inline float D_Beckmann( float Roughness, float NoH )
 // David Neubelt and Matt Pettineo, Ready at Dawn Studios, "Crafting a Next-Gen Material Pipeline for The Order: 1886", 2013
 inline float D_GGX(float Roughness, float NdotH)
 {
-	float m = Roughness;
+	//float m = Roughness;
+	float m = Roughness*Roughness;
 	float m2 = m*m;
+	
 	float D = m2 / (PI * sqr(sqr(NdotH) * (m2 - 1) + 1));
 	
 	return D;
@@ -62,8 +65,9 @@ inline float G_Kelemenn( float NdotL, float NdotV, float LdotV)
 inline float G_Schlick(float Roughness, float NdotV, float NdotL)
 {
 	float m = Roughness;
-	//float m = roughness*roughness;
+	//float m = Roughness*Roughness;
 	float m2 = m*m;
+	
 	return (NdotV * NdotL) / ( (NdotV * (1 - m) + m) * (NdotL * (1 - m) + m) );
 }
 
@@ -134,29 +138,26 @@ inline float3 diffuseSkinIBL(float3 skinCoef, float3 diffuseIBL_HighFreq, float3
 	return lerp(diffuseIBL_HighFreq , diffuseIBL_LowFreq, skinCoef);
 }
 /*
- inline float RadicalInverse(int bits) 
- {
-     bits = (bits << 16u) | (bits >> 16u);
-     bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
-     bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
-     bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
-     bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
-     return float(bits) * 2.3283064365386963e-10; // / 0x100000000
- }
-
-inline float2 Hammersley(int i, int N)
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html	
+inline uint RadicalInverse(uint bits) 
+{
+	#ifdef SHADER_API_D3D11
+		return reversebits( bits );
+	#else
+		bits = (bits << 16u) | (bits >> 16u);
+		bits = ((bits & 0x55555555u) << 1u) | ((bits & 0xAAAAAAAAu) >> 1u);
+		bits = ((bits & 0x33333333u) << 2u) | ((bits & 0xCCCCCCCCu) >> 2u);
+		bits = ((bits & 0x0F0F0F0Fu) << 4u) | ((bits & 0xF0F0F0F0u) >> 4u);
+		bits = ((bits & 0x00FF00FFu) << 8u) | ((bits & 0xFF00FF00u) >> 8u);
+		return float(bits) * 2.3283064365386963e-10; // / 0x100000000
+	#endif
+}
+// http://holger.dammertz.org/stuff/notes_HammersleyOnHemisphere.html	
+inline float2 Hammersley(uint i, uint N)
 {
 	return float2(float(i) * (1.0/float( N )), RadicalInverse(i));
 }
-
-
-float2 Hammersley( uint Index, uint NumSamples, uint2 Random )
-{
-	float E1 = frac( (float)Index / NumSamples + float( Random.x & 0xffff ) / (1<<16) );
-	float E2 = float( RadicalInverse(Index) ^ Random.y ) * 2.3283064365386963e-10;
-	return float2( E1, E2 );
-}
-*/	
+*/
 
 inline  float RadicalInverse( int n, int base)
 {
@@ -176,7 +177,8 @@ inline float2 Hammersley(int i, int N)
 {
 	return float2(float(i) * (1.0/float( N )), RadicalInverse(i,3) );
 }	
-			
+
+		
 inline float4 ImportanceSampleIrradiance( float2 Xi,float3 N)
 {
 			   
@@ -200,7 +202,7 @@ inline float4 ImportanceSampleIrradiance( float2 Xi,float3 N)
 	
 	float pdf = 1.0 / (4 * PI);
 
-	float3 UpVector = float3(0,1,0);
+	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 			 
@@ -221,7 +223,7 @@ inline float4 ImportanceSampleSphereUniform( float2 Xi,float3 N)
 	
 	float pdf = 1.0 / (4 * PI);
 
-	float3 UpVector = float3(0,1,0);
+	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 			 
@@ -241,7 +243,7 @@ inline float4 ImportanceSampleHemisphereUniform( float2 Xi, float3 N)
 	
 	float pdf = 1.0 / (2 * PI);
 
-	float3 UpVector = float3(0,1,0);
+	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 			 
@@ -261,7 +263,7 @@ inline float4 ImportanceSampleHemisphereCosine( float2 Xi, float3 N)
 	
 	float pdf = CosTheta / PI;
 
-	float3 UpVector = float3(0,1,0);
+	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 			 
@@ -270,10 +272,10 @@ inline float4 ImportanceSampleHemisphereCosine( float2 Xi, float3 N)
 			
 inline float4 ImportanceSampleBlinn( float2 Xi, float Roughness, float3 N )
 {
-	float m = Roughness;
+	float m = Roughness*Roughness;
 	float m2 = m*m;
 	
-	float n = 2 / (m2) - 2;
+	float n = 2 / m2 - 2;
 
 	float Phi = 2 * PI * Xi.x;
 	float CosTheta = pow( max(Xi.y, 0.001f), 1 / (n + 1) );
@@ -287,7 +289,7 @@ inline float4 ImportanceSampleBlinn( float2 Xi, float Roughness, float3 N )
 	float D = (n+2)/ (2*PI) * saturate(pow( CosTheta, n ));
 	float pdf = D * CosTheta;
 
-	float3 UpVector = float3(0,1,0);
+	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 	
@@ -298,7 +300,8 @@ inline float4 ImportanceSampleBlinn( float2 Xi, float Roughness, float3 N )
 // Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
 inline float4 ImportanceSampleGGX( float2 Xi, float Roughness, float3 N)
 {
-	float m = Roughness;
+	//float m = Roughness;
+	float m = Roughness*Roughness;
 	float m2 = m*m;
 	
 	float Phi = 2 * PI * Xi.x;
@@ -314,13 +317,63 @@ inline float4 ImportanceSampleGGX( float2 Xi, float Roughness, float3 N)
 	float d = ( CosTheta * m2 - CosTheta ) * CosTheta + 1;
 	float D = m2 / ( PI*d*d );
 	float pdf = D * CosTheta;
-			 
+
  	float3 UpVector = abs(N.z) < 0.999 ? float3(0,0,1) : float3(1,0,0);
 	float3 T = normalize( cross( UpVector, N ) );
 	float3 B = cross( N, T );
 			 
 	return float4((T * H.x) + (B * H.y) + (N * H.z), pdf);
 }
+
+#ifdef ANTONOV_IMPORTANCE_SAMPLING
+// we can get away with 32 samples with a 256x256 cubemap
+inline float calcLOD(int cubeSize, float pdf, int NumSamples)
+{
+	//float preCalcLod = log2( (size*size) / NumSamples);
+	//return 0.5 * preCalcLod - 0.5 * log2( pdf );
+
+	float lod = (0.5 * log2( (cubeSize*cubeSize)/float(NumSamples) ) + 2.0) - 0.5*log2(pdf); 
+	return lod;
+}
+
+// Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
+float3 SpecularIBL( float Roughness, float3 R, uint NumSamples, uint cubeSize )
+{
+	float3 N = R;
+	float3 V = R;
+			 
+	float3 SampleColor = 0;
+	float TotalWeight = 0;
+	
+	for( uint i = 0; i < NumSamples; i++ )
+	{
+		float2 Xi = Hammersley( i, NumSamples ) + 1.e-6f;
+		
+		float4 H = float4(0,0,0,0);
+
+		#ifdef ANTONOV_BLINN
+			H += ImportanceSampleBlinn(Xi, Roughness, N);
+		#endif
+		#ifdef ANTONOV_GGX
+			H += ImportanceSampleGGX(Xi, Roughness, N);
+		#endif
+
+		
+		float3 L = 2 * dot( V, H ) * H - V;
+			               
+	 	float NoL = saturate( dot( N, L ) );
+    
+		if( NoL > 0 )
+		{                                    
+			SampleColor += DecodeRGBMLinear(texCUBElod(_SpecCubeIBL, float4(L, calcLOD(cubeSize, H.w, NumSamples)))) * NoL;
+				                        
+			TotalWeight += NoL;
+		}  
+	}
+	
+	return SampleColor / TotalWeight;
+}
+#endif
 
 float3 ApproximateSpecularIBL( float3 SpecularColor , float Roughness, float3 N, float3 V, float4 worldPos, float3 vN)
 {
@@ -385,7 +438,12 @@ float3 ApproximateSpecularIBL( float3 SpecularColor , float Roughness, float3 N,
 		R = fix_cube_lookup(R,Roughness,lod);
 	#endif
 	
+	
 	float3 prefilteredColor = DecodeRGBMLinear(texCUBElod(_SpecCubeIBL,float4(R,Roughness * lod))) * attenuation;
+	#ifdef ANTONOV_IMPORTANCE_SAMPLING
+		prefilteredColor = SpecularIBL( Roughness, R, 256, 128 );
+	#endif
+	
 	
 	#ifdef ANTONOV_HORYZON_OCCLUSION
 		// http://marmosetco.tumblr.com/post/81245981087

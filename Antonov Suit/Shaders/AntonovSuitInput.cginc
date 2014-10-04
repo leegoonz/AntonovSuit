@@ -3,13 +3,10 @@
 #ifndef ANTONOV_SUIT_INPUT_CGINC
 #define ANTONOV_SUIT_INPUT_CGINC
 
-//RGBM
-bool _RGBM;
-
 half4		_exposureIBL;
 
-#ifdef ANTONOV_TOKSVIG
-half		_toksvigFactor;
+#ifdef SHADER_API_D3D11
+half		_Cutoff;
 #endif
 
 #if defined(ANTONOV_SPHERE_PROJECTION) || defined(ANTONOV_BOX_PROJECTION)
@@ -34,9 +31,9 @@ sampler2D unity_Lightmap;
 #endif	
 
 //SKYLIGHT
-samplerCUBE	_AmbCubeIBL;
-float4		_skyColor;
-float4		_groundColor;
+//samplerCUBE	_AmbCubeIBL;
+//float4		_skyColor;
+//float4		_groundColor;
 
 //SKIN
 #ifdef ANTONOV_SKIN
@@ -46,7 +43,9 @@ sampler2D	_BumpMicroTex;
 sampler2D	_CavityMicroTex;
 half		_tuneCurvature;
 half		_cavityAmount;						
-half		_BumpLod;												
+half		_BumpLod;	
+half4		_backScatteringColor;
+half		_backScatteringSize;																					
 
 half		_microBumpAmount;
 half		_microBumpLod;
@@ -66,22 +65,16 @@ half		_illumColorG;
 half		_illumColorB;
 #endif
 
-//SPECULAR AND ROUGNESS
+//SPECULAR
 #ifdef ANTONOV_WORKFLOW_SPECULAR
 sampler2D	_SpecTex;
 //fixed4		_SpecColor; Built in
 #endif
 
-#ifdef ANTONOV_WORKFLOW_METALLIC
-
-#endif
-
-//METALLIC ROUGHNESS AND OCCLUSION
-#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
+//METALLIC SPECULAR ROUGHNESS AND OCCLUSION
 sampler2D	_RGBTex;
-#endif
+
 half		_Shininess;
-half		_viewDpdtRoughness;
 half		_occlusionAmount;
 			
 //BASE COLOR AND DIFFUSE
@@ -92,8 +85,13 @@ fixed4		_Color;
 //NORMAL
 sampler2D	_BumpMap;
 
+#ifdef ANTONOV_IMPORTANCE_DIFFUSE
 int		_diffSamples;
+#endif
+
+#ifdef ANTONOV_IMPORTANCE_SPECULAR
 int		_specSamples;
+#endif
 
 //DIFFUSE IBL
 samplerCUBE _DiffCubeIBL;
@@ -106,6 +104,49 @@ int 		_specularSize;
 int 		_lodSpecCubeIBL;
 
 //HORYZON OCCLUSION
+#ifdef ANTONOV_TOKSVIG
+half		_toksvigFactor;
+#endif
+
+//VIEW DEPENDENT ROUGHNESS
+#ifdef ANTONOV_VIEW_DEPENDENT_ROUGHNESS	
+half		_viewDpdtRoughness;
+#endif
+
+#ifdef ANTONOV_HORYZON_OCCLUSION
 half		_horyzonOcclusion;
+#endif
+
+//SSR
+#ifdef ANTONOV_SSR
+//G-Buffer
+sampler2D	_Specular_GBUFFER;
+sampler2D	_WorldNormal_GBUFFER;
+sampler2D	_Reflection_Pass; 
+
+sampler2D	_Jitter;
+sampler2D	_CameraDepthTexture;
+
+float4		_CameraDepthTexture_ST;
+float4		_MainTex_TexelSize;
+
+float		_fresnelIntensity;
+float		_reflectionBlur;   
+float		_reflectionStrength;
+float		_reflectionBias;
+float		_edgeFactor; 
+float		_maxRoughness;
+float		_bounceStrength;
+
+uniform float4x4	_ProjectionMatrix;
+uniform float4x4	_ProjectionInverseMatrix;
+uniform float4x4	_ProjectionPreviousMatrix;
+uniform float4x4	_ViewProjectionInverseMatrix;
+uniform float4x4	_ViewProjectionMatrix;
+uniform float4x4	_WorldViewMatrix;
+uniform float4x4	_WorldViewInverseMatrix;
+uniform float4x4	_ViewWorldMatrix;
+uniform float4x4	_ViewProjectionPreviousMatrix; 
+#endif
 
 #endif

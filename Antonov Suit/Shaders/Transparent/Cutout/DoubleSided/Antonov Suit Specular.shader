@@ -1,29 +1,25 @@
 ﻿// Created by Charles Greivelding
-Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic" 
+Shader "Antonov Suit/Specular Workflow/Transparent/Cutout/DoubleSided/Specular" 
 {
 	Properties 
 	{
-		_Color ("Base Color", Color) = (1, 1, 1, 1)  
-		_MainTex ("Base (RGB)", 2D) = "white" {}
- 	
+		_Color ("Diffuse Color", Color) = (1, 1, 1, 1) 
+		_Cutoff ("Alpha cutoff", Range(0,1)) = 0.5 
+		_MainTex ("Diffuse (RGB)", 2D) = "white" {}
+		
+		_SpecColor ("Specular Color", Color) = (1, 1, 1, 1)   	 	
 		_Shininess("Roughness", Range (0.001,1)) = 1.0
 		_viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
 		//_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
+		_SpecTex ("Specular (RGB)", 2D) = "white" {}	
 		
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
 		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
 		
-		_RGBTex ("Metallic (R), Roughness (G), Occlusion (B), Alpha (A)", 2D) = "white" {}	
-		
-		_illumStrength ("Illum Strength", float ) = 1.0
-		_illumColorR("Illum Red", float ) = 1.0
-		_illumColorG("Illum Green", float ) = 1.0
-		_illumColorB("Illum Blue", float ) = 1.0
-		_EmissionLM ("Illum (Lightmapper)", Float) = 0
-		_Illum ("Illum Color (RGBA)", 2D) = "black" {}
+		_RGBTex ("Alpha (R), Roughness (G), Occlusion (B)", 2D) = "white" {}	
 			
 		_BumpMap ("Normal", 2D) = "bump" {}
-		
+
 		_DiffCubeIBL ("Diffuse Cube", Cube) = "black" {}
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
@@ -32,8 +28,12 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 	}
 	SubShader 
 	{
-		Tags { "RenderType"="Opaque" }
+		Tags {"Queue"="AlphaTest" "IgnoreProjector"="True" "RenderType"="TransparentCutout"}
 		LOD 200
+		
+		AlphaTest GEqual [_Cutoff]
+		Cull Off
+      	Blend SrcAlpha OneMinusSrcAlpha
 		
 		CGINCLUDE
 		#pragma target 3.0
@@ -53,23 +53,20 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
 		
 		// Workflow
-		#define ANTONOV_WORKFLOW_METALLIC
-		
-		// Metallic workflow only, this define the type of the surface
-		#define ANTONOV_METALLIC
+		#define ANTONOV_WORKFLOW_SPECULAR
 		
 		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT
 		
 		// Optional features
 		//#define ANTONOV_TOKSVIG
-		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		//#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
 		//#define ANTONOV_HORYZON_OCCLUSION
 		#define ANTONOV_ILLUM
 
-		#include "../AntonovSuitInput.cginc"
-		#include "../AntonovSuitLib.cginc"
-		#include "../AntonovSuitBRDF.cginc"
+		#include "../../../AntonovSuitInput.cginc"
+		#include "../../../AntonovSuitLib.cginc"
+		#include "../../../AntonovSuitBRDF.cginc"
 
 		ENDCG
 		
@@ -82,7 +79,6 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 
 			//UNITY STUFF
 			#pragma multi_compile_fwdbase 
-			
 			#include "UnityCG.cginc"
 			#include "AutoLight.cginc"
 			#include "Lighting.cginc"
@@ -90,7 +86,7 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 			//ANTONOV SUIT STUFF
 			#define ANTONOV_FWDBASE
 			
-			#include "../AntonovSuitFrag.cginc"
+			#include "../../../AntonovSuitFrag.cginc"
 
 			ENDCG
 		}
@@ -101,7 +97,7 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 			Blend One One
 
 			CGPROGRAM
-
+			
 			//UNITY STUFF
 			#pragma multi_compile_fwdadd_fullshadows
 			
@@ -110,11 +106,10 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic"
 			#include "Lighting.cginc"
 			
 			//ANTONOV SUIT STUFF
-			
-			#include "../AntonovSuitFrag.cginc"
+			#include "../../../AntonovSuitFrag.cginc"
 
-			ENDCG		
+			ENDCG
 		}
 	}
-	FallBack "Antonov Suit/Metallic Workflow/Metallic"
+	FallBack "Transparent/Cutout/Diffuse"
 }

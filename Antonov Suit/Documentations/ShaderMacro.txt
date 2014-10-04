@@ -1,0 +1,85 @@
+ANTONOV SUIT
+A physical based shading system for Unity 4
+by Charles Greivelding Thomas - http://www.charles-greivelding.com/
+
+ANTONOV SUIT SHADER FEATURES
+
+Antonov Suit use macro in order to work which are define in all Antonov Suit shaders.
+
+// Workflow
+#define ANTONOV_WORKFLOW_METALLIC // Activate metallic workflow
+
+// Metallic workflow surfaces
+#define ANTONOV_DIELECTRIC, #define ANTONOV_METALLIC, #define ANTONOV_METALLIC_DIELECTRIC // These define the type of surface the shader will be, only for metallic workflow
+
+#define ANTONOV_WORKFLOW_SPECULAR // Activate specular color workflow
+
+#define ANTONOV_SKIN // Activate skin workflow
+
+// Direct diffuse lighting model
+#define ANTONOV_DIFFUSE_LAMBERT, #define ANTONOV_DIFFUSE_BURLEY //Define the direct diffuse lighting model
+
+// Optional features
+#define ANTONOV_TOKSVIG // Activate specular toksvig AA
+Shader parameter to use : _toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
+
+#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS // Activate the view dependent roughness, see : www.gdcvault.com/play/1018086/Photorealism-Through-the-Eyes-of
+Shader parameter to use : _viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
+	
+#define ANTONOV_HORYZON_OCCLUSION // Activate horyzon occlusion, see : http://marmosetco.tumblr.com/post/81245981087
+Shader parameter to use : _horyzonOcclusion("Horyzon Occlusion Amount", Range (0.0,1)) = 0.0
+
+#define ANTONOV_ILLUM // Activate self-illuminated surface
+Shader parameter to use : _illumStrength ("Illum Strength", float ) = 1.0
+						  _illumColorR("Illum Red", float ) = 1.0
+						  _illumColorG("Illum Green", float ) = 1.0
+						  _illumColorB("Illum Blue", float ) = 1.0
+						  _EmissionLM ("Illum (Lightmapper)", Float) = 0
+						  _Illum ("Illum Color (RGBA)", 2D) = "black" {}
+
+The macro need to be added in the CGINCLUDE section of the Antonov Suit shaders.
+And in the order presented below.
+
+		CGINCLUDE
+		#pragma target 3.0
+		
+		#ifdef SHADER_API_OPENGL	
+			#pragma glsl
+		#endif
+			
+		#pragma vertex vert
+		#pragma fragment frag
+		#pragma only_renderers d3d9 opengl d3d11
+		
+		#include "UnityShaderVariables.cginc"
+		
+		//ANTONOV SUIT STUFF
+		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
+		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
+		
+		// Workflow
+		#define ANTONOV_WORKFLOW_METALLIC or ANTONOV_WORKFLOW_SPECULAR or ANTONOV_SKIN
+		
+		// Metallic workflow only, this define the type of the surface
+		#define ANTONOV_DIELECTRIC or #define ANTONOV_METALLIC or #define ANTONOV_METALLIC_DIELECTRIC
+		
+		// Direct diffuse lighting model
+		#define ANTONOV_DIFFUSE_LAMBERT or #define ANTONOV_DIFFUSE_BURLEY
+		
+		// Optional features
+		#define ANTONOV_TOKSVIG
+		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		#define ANTONOV_HORYZON_OCCLUSION
+		#define ANTONOV_ILLUM
+
+		#include "AntonovSuitInput.cginc"
+		#include "AntonovSuitLib.cginc"
+		#include "AntonovSuitBRDF.cginc"
+
+		ENDCG
+
+For "Workflow", "Metallic workflow surfaces" and "Direct diffuse lighting model" use only one of these macro per shader! 
+See "Antonov Suit Metallic Dielectric.shader", "Antonov Suit Specular.shader" and "Antonov Suit PreIntegrated Skin" as reference.
+
+Keep in mind that using the "Optional features" will increase the shader cost.
+	

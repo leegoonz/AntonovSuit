@@ -1,0 +1,17 @@
+ANTONOV SUIT
+A physical based shading system for Unity 4
+by Charles Greivelding Thomas - http://www.charles-greivelding.com/
+
+QUIXEL AND ANTONOV SUIT
+
+In order to use Antonov Suit with Quixel and dDo you will need to use the Antonov Suit profiles.
+
+INSTALLAION
+
+Open the "QuixelProfile.zip" and extract it here : "C:\Users\Public". This add the Antonov Suit profile to Quixel Suite.
+If all goes well you have compatible profile to use with Antonov Suit !
+
+HOW TO USE IT
+
+Depending on your workflow you will have to choose between "AntonovSuit (Metalness)" and "AntonovSuit (Specular)".
+When exporting simply use the "AntonovSuit" profile and choose your settings. Exported suffix map need to be in this format "_MAP" not in "_Map" or "_map".

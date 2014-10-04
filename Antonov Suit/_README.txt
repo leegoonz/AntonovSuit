@@ -27,9 +27,10 @@ Specular Color workflow :
 It use the shader called Specular ("Anotonov Suit/Specular Workflow/Specular") and needs the following textures : 
 
 _DIFF 	: Diffuse albedo.
+_DIFFA	: Diffuse albedo with alpha in A. // Needed for transparent version
 _SPEC	: Specular albedo.
 _NORM	: Normal map.
-_RGB	: R = Alpha, G = Roughness, B = Occlusion.
+_RGB	: G = Roughness, B = Occlusion.
 _ILLUM	: Illum color. // Needed for self illuminated version
 
 Metallic workflow :
@@ -45,10 +46,9 @@ Metallic and Dielectric shader have both properties.
 In order to work the Metallic shaders needs the following textures : 
 
 _COLOR	: Diffuse albedo and specular albedo.
+_COLORA	: Diffuse albedo and specular albedo with alpha in A. // Needed for transparent version
 _NORM	: Normal map.
 _RGB	: R = Metallic, G = Roughness, B = Occlusion.
-
-_RGBA	: R = Metallic, G = Roughness, B = Occlusion, A = Alpha. // Needed for transparent version
 
 _ILLUM	: Illum color. // Needed for self illuminated version
 
@@ -92,3 +92,5 @@ Now you have an object called AntonovSuitProbe and if you select it you will see
 		In order to use the Antonov Suit shaders you need to assigned objects to the probe.
 		The probe supports sphere and box projection and you can activate an attenuation factor to it.
 		You will find "Diffuse Cubemap" and "Specular Cubemap" textures slot and exposure control of them.
+		
+Convolution are at its best state in DX11 and using Pro.
