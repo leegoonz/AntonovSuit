@@ -4,7 +4,7 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 	Properties 
 	{
 		_Color ("Diffuse Color", Color) = (1, 1, 1, 1)  
-		_MainTex ("Diffuse (RGB)", 2D) = "white" {}
+		_MainTex ("Diffuse (RGB), Alpha (A)", 2D) = "white" {}
 		
 		_SpecColor ("Specular Color", Color) = (1, 1, 1, 1)   	
 		_Shininess("Roughness", Range (0.001,1)) = 1.0
@@ -15,7 +15,7 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
 		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
 		
-		_RGBTex ("Alpha (R), Roughness (G), Occlusion (B)", 2D) = "white" {}
+		_RGBTex ("Roughness (G), Occlusion (B)", 2D) = "white" {}
 		
 		_illumStrength ("Illum Strength", float ) = 1.0
 		_illumColorR("Illum Red", float ) = 1.0
@@ -62,8 +62,9 @@ Shader "Antonov Suit/Specular Workflow/Self-Illumin/Specular"
 		
 		// Optional features
 		//#define ANTONOV_TOKSVIG
-		//#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
 		//#define ANTONOV_HORYZON_OCCLUSION
+		#define ANTONOV_ILLUM
 
 		#include "../AntonovSuitInput.cginc"
 		#include "../AntonovSuitLib.cginc"

@@ -5,7 +5,7 @@ Shader "Antonov Suit/Metallic Workflow/Transparent/Cutout/Metallic"
 	{
 		_Color ("Base Color", Color) = (1, 1, 1, 1)
 		_Cutoff ("Alpha cutoff", Range(0,1)) = 0.5
-		_MainTex ("Base (RGB)", 2D) = "white" {}
+		_MainTex ("Base (RGB), Alpha (A)", 2D) = "white" {}
  	
 		_Shininess("Roughness", Range (0.001,1)) = 1.0
 		_viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
@@ -14,7 +14,7 @@ Shader "Antonov Suit/Metallic Workflow/Transparent/Cutout/Metallic"
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
 		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
 		
-		_RGBTex ("Metallic (R), Roughness (G), Occlusion (B), Alpha (A)", 2D) = "white" {}	
+		_RGBTex ("Metallic (R), Roughness (G), Occlusion (B)", 2D) = "white" {}	
 			
 		_BumpMap ("Normal", 2D) = "bump" {}
 		

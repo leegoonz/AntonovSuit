@@ -60,9 +60,9 @@ Shader "Antonov Suit/Specular Workflow/Transparent/Cutout/DoubleSided/Specular"
 		
 		// Optional features
 		//#define ANTONOV_TOKSVIG
-		//#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
+		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
 		//#define ANTONOV_HORYZON_OCCLUSION
-		#define ANTONOV_ILLUM
+		//#define ANTONOV_ILLUM
 
 		#include "../../../AntonovSuitInput.cginc"
 		#include "../../../AntonovSuitLib.cginc"

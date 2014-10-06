@@ -4,7 +4,7 @@ Shader "Antonov Suit/Metallic Workflow/Metallic and Dielectric"
 	Properties 
 	{
 		_Color ("Base Color", Color) = (1, 1, 1, 1)  
-		_MainTex ("Base (RGB)", 2D) = "white" {}
+		_MainTex ("Base (RGB), Alpha (A)", 2D) = "white" {}
 		
 		_Shininess("Roughness", Range (0.01,1)) = 0.0
 		_viewDpdtRoughness("View Dependent Roughness", Range (0.0,1)) = 0.0
