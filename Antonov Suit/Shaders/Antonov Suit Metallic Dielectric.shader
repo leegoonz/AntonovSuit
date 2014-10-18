@@ -21,7 +21,7 @@ Shader "Antonov Suit/Metallic Workflow/Metallic and Dielectric"
 		
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
 		
-		_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}	
+		//_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}	
 	}
 	SubShader 
 	{
@@ -53,6 +53,9 @@ Shader "Antonov Suit/Metallic Workflow/Metallic and Dielectric"
 		
 		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT
+		
+		// Lightmap
+		//#define DUALLIGHTMAP_ON // Enable dual lightmaps support in forward rendering
 		
 		// Optional features
 		//#define ANTONOV_TOKSVIG

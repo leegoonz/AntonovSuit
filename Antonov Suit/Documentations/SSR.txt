@@ -16,10 +16,10 @@ PARAMETERS
 	ISDEBUG
 	
 	This will display the G-Bufer texture used by Antonov Suit Screen Space Reflection.
-
-	JITTER
-
-	In order to work you need to add "NOISE_128X128_JITTER.tga" in the Jitter texture slot of the script.
+	
+	ISMETALLIC
+	
+	To enable if you are using metallic workflow and disable it if you are using specular workflow, it is set on enabled by default.
 	
 	USESSR
 	

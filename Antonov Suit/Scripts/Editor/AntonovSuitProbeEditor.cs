@@ -96,7 +96,7 @@ public class AntonovSuitProbeEditor : Editor
 		Selection.activeGameObject = go;
 		AntonovSuitProbe s_AntonovSuitProbe = go.GetComponent<AntonovSuitProbe>();
 
-		Undo.RegisterCreatedObjectUndo(go, "Add ImageReflection");
+		Undo.RegisterCreatedObjectUndo(go, "Add Probe");
 		return s_AntonovSuitProbe;
 	}
 

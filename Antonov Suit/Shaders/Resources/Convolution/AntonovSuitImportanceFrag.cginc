@@ -1,18 +1,8 @@
 ﻿#ifndef ANTONOV_SUIT_CONVOLVE_FRAG
 #define ANTONOV_SUIT_CONVOLVE_FRAG
-/*
-inline float calcLOD(int size, float pdf, int NumSamples)
-{
-	float preCalcLod = log2( (size*size) / NumSamples);
-	return 0.5 * preCalcLod - 0.5 * log2( pdf );
-}
-*/
 
 inline float calcLOD(int cubeSize, float pdf, int NumSamples)
 {
-	//float preCalcLod = log2( (size*size) / NumSamples);
-	//return 0.5 * preCalcLod - 0.5 * log2( pdf );
-
 	float lod = (0.5 * log2( (cubeSize*cubeSize)/float(NumSamples) ) + 2.0) - 0.5*log2(pdf); 
 	return lod;
 }
@@ -46,7 +36,7 @@ float3 DiffuseIBL(float3 R, int NumSamples, int cubeSize )
 		
 		if( NoL > 0 )
 		{
-			SampleColor += DecodeRGBMLinear(texCUBElod(_DiffCubeIBL, float4(L.xyz,calcLOD(cubeSize, L.w, NumSamples)))) * NoL;
+			SampleColor += DecodeRGBMLinear(texCUBElod(_DiffCubeIBL, float4(L.xyz,calcLOD(cubeSize, L.w, NumSamples)))) * NoL * PI;
 			TotalWeight += NoL;
 		}
 	}
@@ -78,17 +68,9 @@ float3 SpecularIBL( float Roughness, float3 R, int NumSamples, int cubeSize )
 		float3 L = 2 * dot( V, H ) * H - V;
 			               
 	 	float NoL = saturate( dot( N, L ) );
-	 	//float NoH = saturate( dot( N, H ) );
-		//float VoH = saturate( dot( V, H ) );
-		//float NoV = saturate( dot( N, V ) );
     
 		if( NoL > 0 )
-		{        
-			//float m2 = Roughness*Roughness;
-		   	//float D = m2 / (PI * pow((NoH*NoH) * (m2 - 1.0f) + 1.0f, 2.0f));
-			//float pm = D * NoV;
-			//float pdf = pm / (4.0f * VoH);
-			                                                     
+		{                                                          
 			SampleColor += DecodeRGBMLinear(texCUBElod(_SpecCubeIBL, float4(L, calcLOD(cubeSize, H.w, NumSamples)))) * NoL;
 				                        
 			TotalWeight += NoL;

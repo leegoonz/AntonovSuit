@@ -22,30 +22,33 @@ float3		_cubemapBoxSize;
 #endif
 
 //LIGHTMAP
-#ifdef LIGHTMAP_ON
+#ifndef LIGHTMAP_OFF
+float4 unity_LightmapFade;
 float4 unity_LightmapST;
 sampler2D unity_Lightmap;
-	#ifdef DIRLIGHTMAP_ON
+	#ifndef DIRLIGHTMAP_OFF
+		sampler2D unity_LightmapInd;
+	#endif
+	#ifdef DUALLIGHTMAP_ON
 		sampler2D unity_LightmapInd;
 	#endif
 #endif	
 
 //SKYLIGHT
 //samplerCUBE	_AmbCubeIBL;
-//float4		_skyColor;
+float4		_skyColor;
 //float4		_groundColor;
 
 //SKIN
 #ifdef ANTONOV_SKIN
+sampler2D	_ENV_SKIN_LUT;
 sampler2D	_SKIN_LUT;
 sampler2D	_RGBSkinTex;
 sampler2D	_BumpMicroTex;
 sampler2D	_CavityMicroTex;
 half		_tuneCurvature;
 half		_cavityAmount;						
-half		_BumpLod;	
-half4		_backScatteringColor;
-half		_backScatteringSize;																					
+half		_BumpLod;																					
 
 half		_microBumpAmount;
 half		_microBumpLod;
@@ -54,6 +57,13 @@ half		_microScale;
 half		_tuneSkinCoeffX;
 half		_tuneSkinCoeffY;
 half		_tuneSkinCoeffZ;
+#endif
+
+#ifdef ANTONOV_BACKSCATTERING
+half4		_backScatteringOuterColor;
+half4		_backScatteringInnerColor;
+half		_backScatteringAmount;
+half		_backScatteringSize;	
 #endif
 
 //SELF ILLUM

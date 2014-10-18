@@ -58,6 +58,9 @@ Shader "Antonov Suit/Metallic Workflow/Transparent/Cutout/Metallic and Dielectri
 		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT
 		
+		// Lightmap
+		//#define DUALLIGHTMAP_ON // Enable dual lightmaps support in forward rendering
+		
 		// Optional features
 		//#define ANTONOV_TOKSVIG
 		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS

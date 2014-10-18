@@ -13,7 +13,7 @@ Shader "Antonov Suit/Specular Workflow/Specular"
 		_SpecTex ("Specular (RGB)", 2D) = "white" {}	
 		
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
-		_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
+		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 1.0
 		
 		_RGBTex ("Roughness (G), Occlusion (B)", 2D) = "white" {}
 			
@@ -22,8 +22,8 @@ Shader "Antonov Suit/Specular Workflow/Specular"
 		_DiffCubeIBL ("Diffuse Cube", Cube) = "black" {}
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
-		
-		_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
+		//
+		//_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
 	}
 	SubShader 
 	{
@@ -53,10 +53,13 @@ Shader "Antonov Suit/Specular Workflow/Specular"
 		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT
 		
+		// Lightmap
+		//#define DUALLIGHTMAP_ON // Enable dual lightmaps support in forward rendering
+		
 		// Optional features
 		//#define ANTONOV_TOKSVIG
 		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
-		#define ANTONOV_HORYZON_OCCLUSION
+		//#define ANTONOV_HORYZON_OCCLUSION
 		//#define ANTONOV_ILLUM
 
 		#include "AntonovSuitInput.cginc"

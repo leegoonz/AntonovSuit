@@ -19,6 +19,9 @@ Antonov Suit use macro in order to work which are define in all Antonov Suit sha
 // Direct diffuse lighting model
 #define ANTONOV_DIFFUSE_LAMBERT, #define ANTONOV_DIFFUSE_BURLEY //Define the direct diffuse lighting model
 
+// Lightmap
+#define DUALLIGHTMAP_ON // Enable dual lightmaps support in forward rendering
+
 // Optional features
 #define ANTONOV_TOKSVIG // Activate specular toksvig AA
 Shader parameter to use : _toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
@@ -65,6 +68,9 @@ And in the order presented below.
 		
 		// Direct diffuse lighting model
 		#define ANTONOV_DIFFUSE_LAMBERT or #define ANTONOV_DIFFUSE_BURLEY
+		
+		// Lightmap
+		#define DUALLIGHTMAP_ON // Enable dual lightmaps support in forward rendering
 		
 		// Optional features
 		#define ANTONOV_TOKSVIG

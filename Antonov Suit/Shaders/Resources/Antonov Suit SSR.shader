@@ -12,7 +12,7 @@ Shader "Hidden/Antonov Suit/SSR"
 	#include "UnityCG.cginc"
 
 	#define ANTONOV_SSR
-
+	#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
 	#include "../AntonovSuitInput.cginc"
 	#include "../AntonovSuitLib.cginc"
 	#include "../AntonovSuitBRDF.cginc"
@@ -38,38 +38,36 @@ Shader "Hidden/Antonov Suit/SSR"
 		return o;
 	}
 
-	 float4 RayMarch(float3 R,int NumSteps, float4 viewPos, float3 scrPos, float2 coord, float3 stepOffset)
+	 float4 RayMarch(float3 R,int NumSteps, float4 viewPos, float3 screenPos, float2 coord, float3 stepOffset)
      {
-  
-		float4 vspPosReflect = mul (_ProjectionMatrix, viewPos+float4(R,1));
-		vspPosReflect.xyz /= vspPosReflect.w;
+  		
+  		
+  		float4 rayPos = viewPos + float4(R,1);
+		float4 rayUV = mul (_ProjectionMatrix, rayPos);
+		rayUV.xyz /= rayUV.w;
 					
-		float3 rayDir = normalize( vspPosReflect - scrPos );
+		float3 rayDir = normalize( rayUV - screenPos );
 		rayDir.xy *= 0.5;
 
 		float sampleDepth;
 		float sampleMask = 0;
 
-	    float3 rayStart = float3(coord,scrPos.z);
-                    
-		float3 rayDirFinal = rayDir;
+	    float3 rayStart = float3(coord,screenPos.z);
                     
  		float stepSize = 1 / ( (float)NumSteps + 1);
-		rayDirFinal  *= stepOffset * stepSize + stepSize;
+		rayDir  *= stepOffset * stepSize + stepSize;
                                   
-		float3 samplePos = rayStart + rayDirFinal;
-		float3 oldPos = rayStart;
-     
+		float3 samplePos = rayStart + rayDir;
+	
 		float4 SpecularLighting = 0;
 
 		for (int steps = 1;  steps< NumSteps; ++steps)
 		{
-
 			sampleDepth  = LinearEyeDepth(UNITY_SAMPLE_DEPTH(tex2Dlod (_CameraDepthTexture, float4(samplePos.xy,0,0))));
-	
+ 
 			if ( sampleDepth < LinearEyeDepth(samplePos.z) )  
 			{  
-
+			
 				if (abs(sampleDepth - LinearEyeDepth(samplePos.z) ) < _reflectionBias)
 				{
 	                sampleMask = 1;
@@ -78,17 +76,18 @@ Shader "Hidden/Antonov Suit/SSR"
 				}
 				else
 				{
-	                rayDirFinal *= 0.5;
-	                samplePos = oldPos + rayDirFinal;
-				}                      
+					rayDir *= 0.5;
+					samplePos = rayStart + rayDir; 
+				} 
+
+					                 
 			}
 			else
 			{
-	        	oldPos = samplePos;
-	        	rayDirFinal *= 1.1;
-	        	samplePos += rayDirFinal;
+		        rayStart = samplePos;
+		        rayDir *= 1.1;
+		        samplePos += rayDir;
 			}
-	    	steps += 1;
 		}
 
 		//#if UNITY_UV_STARTS_AT_TOP
@@ -97,10 +96,15 @@ Shader "Hidden/Antonov Suit/SSR"
 		//#endif
 
 		return float4(samplePos, sampleMask);
+
 	}
 
 	float4 fragSSR (v2f i) : COLOR
 	{	
+	
+		
+		//float4 bbb = tex2D(_MainTex, i.uv);
+			
 		float4 frag = float4(0,0,0,0);
 		
 		//DIFFUSE
@@ -134,28 +138,29 @@ Shader "Hidden/Antonov Suit/SSR"
 		
 		float2 coord = i.uv;
 		
-		float3 reflectionColor = float3(0,0,0);
+		float4 reflectionColor = float4(0,0,0,0);
+		float4 bounceColor = float4(0,0,0,0);
 		
-		int NumRays = 1;
-		int NumSteps = 100;
+		int NumRays = 5;
+		int NumSteps = 80;
 
 			for( int i = 0; i < NumRays; i++ )
 			{
 
-				float3 stepOffset = tex2D( _Jitter, coord * _ScreenParams.xy / 4 );
+				float3 stepOffset = tex2D( _Jitter, coord * _ScreenParams.xy / 128 );
 				
 
-				//float2 Xi = Hammersley(i, NumRays);
-				float3 Xi = normalize(tex2D( _Jitter, coord * _ScreenParams.xy / 128 ));
+				float2 Xi = Hammersley(i, NumRays);
+				//float3 Xi = tex2D( _Jitter, coord * _ScreenParams.xy / 128 );
 
 				//float3 L = ImportanceSampleHemisphereCosine( Xi, viewNormal); // GI Test
 				float3 H = ImportanceSampleGGX( Xi,roughness, viewNormal);
 				
 				float3 R = 2 * dot(-viewPos.rgb,H) * H - (-viewPos.rgb);
 				//float3 R = reflect(viewPos,viewNormal);
-				
-				float4 ray = RayMarch(R, NumSteps, viewPos, scrPos, coord, 1);
-				//ray.xyz = lerp(float3(coord,0), ray.xyz, saturate(worldNormal.a*10000));
+			
+				float4 ray = RayMarch(R, NumSteps, viewPos, scrPos, coord, stepOffset);
+				ray.xyz = lerp(-viewPos, ray.xyz, alpha);
 				
 				if( ray.w <= 1 )
 				{
@@ -164,20 +169,24 @@ Shader "Hidden/Antonov Suit/SSR"
 					float dirAtten = 1-saturate( dot( -viewDir,worldNormal ));
 
 					float NdotV = saturate(dot( worldNormal ,-viewDir ));   
-					float3 F = F_LazarovApprox( specular.rgb,specular.a, NdotV);
-		
-					half3 specularIBL = ApproximateSpecularIBL( specular.rgb, roughness, worldNormal, -viewDir, worldPos, float3(0,0,1) ) ;
+					float3 F = F_LazarovApprox( specular.rgb,specular.a, NdotV);				
 
-					reflectionColor += tex2D(_MainTex, ray.xy) * ray.w * F * borderAtten * dirAtten;
-					//reflectionColor = lerp(specularIBL,reflectionColor, ray.w * borderAtten * dirAtten);
+					reflectionColor.rgb += tex2D(_MainTex, ray.xy) * ray.w * borderAtten * dirAtten * F;
+					reflectionColor.a = borderAtten;
+					//frag.rgb = ray.rgb;
+					//bounceColor.rgb += tex2D(_MainTex, ray.xy) * ray.w * borderAtten * dirAtten;
 				}
 				
 			}
 			reflectionColor /= NumRays;
+			//bounceColor /= NumRays;
+			
+			//half3 specularIBL = ApproximateSpecularIBL( specular.rgb, roughness, worldNormal, -viewDir, worldPos, float3(0,0,1) );
+		
+			//float3 final = lerp(bbb,reflectionColor.rgb* _reflectionStrength, saturate(reflectionColor.a *100));			
 
-							
-
-		frag.rgb = reflectionColor * _reflectionStrength * alpha;
+		//frag.rgb = lerp(bbb,reflectionColor.rgb * _reflectionStrength, saturate(reflectionColor.a *1000)) * alpha;
+		frag.rgb = (bounceColor.rgb + reflectionColor.rgb * _reflectionStrength);
 		
 		return  HDRtoRGBM(frag); 
 

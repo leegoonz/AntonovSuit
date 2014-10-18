@@ -456,6 +456,11 @@ float3 ApproximateSpecularIBL( float3 SpecularColor , float Roughness, float3 N,
 	float F = tex2D(_ENV_LUT, float2(NoV, Roughness)).x;
 	float G = tex2D(_ENV_LUT, float2(NoV, Roughness)).y;
 	
+	#ifdef ANTONOV_SKIN
+		F = tex2D(_ENV_SKIN_LUT, float2(NoV, Roughness)).x;
+		G = tex2D(_ENV_SKIN_LUT, float2(NoV, Roughness)).y;
+	#endif
+	
 	return prefilteredColor * ( SpecularColor * F + G );
 }
 

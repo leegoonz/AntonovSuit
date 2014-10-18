@@ -13,9 +13,12 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		_tuneSkinCoeffZ ("Skin Coeffient B", Range (0,1)) = 0.25
 		_BumpLod ("Skin Softness", Range (0,1)) = 1.0
 		_tuneCurvature ( "Skin Scattering", Range (0,1)) = 0.2
-		_SKIN_LUT ("Skin BRDF LUT", 2D) = "" {}
-		_backScatteringColor("Back Scattering Color", Color) = (.25, 0, 0, 1)   
-		_backScatteringSize("Back Scattering Roughness", Range (0.01,1)) = 0.01
+		//_SKIN_LUT ("Skin BRDF LUT", 2D) = "" {}
+		
+		_backScatteringOuterColor("Back Scattering Outer Color", Color) = (1, 0, 0, 1)
+		_backScatteringInnerColor("Back Scattering Inner Color", Color) = (1, .4, .25, 1)  
+		_backScatteringAmount("Back Scattering Amount", Range (0.0,1)) = 1.0
+		_backScatteringSize("Back Scattering Roughness", Range (0.01,1)) = 0.5
 				
 		_Shininess("Roughness", Range (0.01,1)) = 1.0
 			
@@ -41,7 +44,7 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
 		
-		_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
+		//_ENV_SKIN_LUT ("Env BRDF LUT", 2D) = "white" {}
 	}
 	SubShader 
 	{

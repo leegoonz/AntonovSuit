@@ -62,11 +62,13 @@ _RGB 	: R = Cavity, G = Deepness of scattering, B = Back scattering Mask.
 MicroBump_RGB	: Micro occlusion.
 MicroBump_NORM 	: Micro detail en normal map.
 
-All shaders also use a LUT texture as a geometric and fresnel term for the cubemap specular reflection.
-"Specular Color" and "Metallic" workflow use the GGX_SMITH_LUT texture because they the GGX specular model for the direct lighting and the "Skin" workflow use the BLINN_SMITH_LUT because it use the Beckmann (similar to a Blinn distribution) specular model for the direct lighting.
-Those LUT goes in the ENV_LUT texture slot.
+THE SKY TOOL
 
-The "Skin" workflow use an other LUT called SKIN_LUT for the diffuse direct lighting and goes to the SKIN_LUT texture slot.
+To drop the sky tool into your scene search for the top menu called "Anotonov Suit" then look for the "Sky" object in "AntonovSuit/GameObject/Sky".
+
+The sky tool allow you to spawn your probes in the scene, just hit the "Add Probe" button and it will add a probe. 
+You can also define a general diffuse and specular cubemap if no objects are assigned to a probe. You can control both diffuse and specular exposure and also the ambient light.
+It also feed all shaders LUT so you do not have to do it your self.
 
 THE PROBE TOOL
 

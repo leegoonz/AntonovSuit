@@ -1,3 +1,19 @@
+v0.051
+
+Added dual lightmaps support, use #define DUALLIGHTMAP_ON to enable it, see _ReadMe
+Added sky tool, it is no more needed to feed shaders with LUT textures manually, spawn a probe from it and you can set ambient light with it and apply general diffuse and specular cubemap
+Added metallic option to the SSR
+
+Fixed single, directionnal lightmap issues
+Fixed in error in G-Buffer for SSR
+
+Changed probe script code
+Changed SSR ray march code
+Changed SSR roughness behavior
+Changed diffuse convolution to be more powerfull (I may revert to the old one)
+
+Removed occlusion from direct diffuse lighting
+
 v0.050
 
 Fixed wrong shader parameter name
@@ -21,105 +37,105 @@ Moved Alpha to _MainTex see _Readme for infos
 
 v0.044
 
-fixed errors with build
+Fixed errors with build
 
 v0.043
 
-added exposure control for diffuse and specular cubemap ( request )
-added preview sphere for cubemap
-added edge scale bleeding for smoothedge ( DX9 )
-added three type of convolution for diffuse cubemap
-added view dependent roughness ( see GDC FOX Engine )
-added edge fix for dx9 in shader ( as a test )
+Added exposure control for diffuse and specular cubemap ( request )
+Added preview sphere for cubemap
+Added edge scale bleeding for smoothedge ( DX9 )
+Added three type of convolution for diffuse cubemap
+Added view dependent roughness ( see GDC FOX Engine )
+Added edge fix for dx9 in shader ( as a test )
 
-fixed black edge in the lookup texture generator
-fixed G_smith model in the lookup texture generator 
+Fixed black edge in the lookup texture generator
+Fixed G_smith model in the lookup texture generator 
 
-changed samples amount for a quality setting for convolution
-changed cubemap size for a fixed size choice
-changed exponent math for GGX cubemap to match more the importance sampling reference
-changed skybox convolution projection
-changed smooth edge to wokr only on DX9 as DX11 use its own edge fix
-changed fresnel for cubemap with lookup texture ( D_GGX and G_Smith used as default now )
+Changed samples amount for a quality setting for convolution
+Changed cubemap size for a fixed size choice
+Changed exponent math for GGX cubemap to match more the importance sampling reference
+Changed skybox convolution projection
+Changed smooth edge to wokr only on DX9 as DX11 use its own edge fix
+Changed fresnel for cubemap with lookup texture ( D_GGX and G_Smith used as default now )
 
-removed #pragma_multi_compil for convolution type and moved to different shader instead
+Removed #pragma_multi_compil for convolution type and moved to different shader instead
 
-improved convolution speed ( a bit )
+Improved convolution speed ( a bit )
 
 v0.042
 
-added specular workflow
-added toksvig factor parameter in shader
+Added specular workflow
+Added toksvig factor parameter in shader
 
-changed sphere projection code ( Nvidia approach )
-changed material path for specular and mettalic workflow.
+Changed sphere projection code ( Nvidia approach )
+Changed material path for specular and mettalic workflow.
 
-fixed occlusion on direct specular
+Fixed occlusion on direct specular
 
-removed skin atten shadows from point and spot light in the Pre Integrated Skin
+Removed skin atten shadows from point and spot light in the Pre Integrated Skin
 
 v0.041
 
-added sqrt(roughness); roughness* roughness; which gives better reponse in low range. The Order 1886
+Added sqrt(roughness); roughness* roughness; which gives better reponse in low range. The Order 1886
 
-added Rea skybox shader
-added logo to the probe tool
-added "Bake With IBL" to allow IBL capture
+Added Rea skybox shader
+Added logo to the probe tool
+Added "Bake With IBL" to allow IBL capture
 
-refactored probe tool GUI
+Refactored probe tool GUI
 
-fixed DX11 flip upside down capture
-fixed Z Up vetor in the importance sampling shader
-fixed mip map lod math
+Fixed DX11 flip upside down capture
+Fixed Z Up vetor in the importance sampling shader
+Fixed mip map lod math
 
 
-changed "Reflection" and "Irradiance" shader name to "Hidden/Antonov Suit/Radiance" and to "Hidden/Antonov Suit/Irradiance"
+Changed "Reflection" and "Irradiance" shader name to "Hidden/Antonov Suit/Radiance" and to "Hidden/Antonov Suit/Irradiance"
 
 
 v0.04
 
-added box and sphere projection
-added attenuation control for box and sphere projection ( experimental )
-added burley diffuse model ( use ANTONOV_DIFFUSE_BURLEY instead of ANTONOV_DIFFUSE_LAMBERT )
+Added box and sphere projection
+Added attenuation control for box and sphere projection ( experimental )
+Added burley diffuse model ( use ANTONOV_DIFFUSE_BURLEY instead of ANTONOV_DIFFUSE_LAMBERT )
 
-changed fresnel for Skin PreIntegrated shader
+Changed fresnel for Skin PreIntegrated shader
 
-removed fresnel lut for a math fresnel ( as a test )
+Removed fresnel lut for a math fresnel ( as a test )
 
-fixed serialized enum being reset when changing values in the probe tool
+Fixed serialized enum being reset when changing values in the probe tool
 
 v0.036
 
-fixed "unexpected token '&&'"
+Fixed "unexpected token '&&'"
 
 v0.035
 
-refactored some lines of code
+Refactored some lines of code
 
-changed exponent calculation for convolution
-changed lightmap attenuation for cubemap to match dielectric and metallic behavior
+Changed exponent calculation for convolution
+Changed lightmap attenuation for cubemap to match dielectric and metallic behavior
 
-fixed sharp transition in the cubemap mip map
-fixed problem with point and spot light attenuation
-fixed a division by PI in the skin diffuse color
+Fixed sharp transition in the cubemap mip map
+Fixed problem with point and spot light attenuation
+Fixed a division by PI in the skin diffuse color
 
 
 v0.03
 
-added GPU based convolution for cubemap using importance sampling
-added GGX and Blinn-Phong specular model in the probe tool
-added toksvigAA ( as a TEST )
+Added GPU based convolution for cubemap using importance sampling
+Added GGX and Blinn-Phong specular model in the probe tool
+Added toksvigAA ( as a TEST )
 
 v0.02
 
-added single and directionnal lightmap
-added importance sample amount control to probe tool
+Added single and directionnal lightmap
+Added importance sample amount control to probe tool
 
-changed RGBM encoding for unity free
+Changed RGBM encoding for unity free
 
-fixed issue with uint
-fixed issue with build : "Assets/Antonov Suit/Scripts/AntonovSuitProbe.cs(151,17): error CS0103: The name `EditorApplication' does not exist in the current context"
-fixed _Illum error while making lightmap with beast
+Fixed issue with uint
+Fixed issue with build : "Assets/Antonov Suit/Scripts/AntonovSuitProbe.cs(151,17): error CS0103: The name `EditorApplication' does not exist in the current context"
+Fixed _Illum error while making lightmap with beast
 
 v0.01 
 

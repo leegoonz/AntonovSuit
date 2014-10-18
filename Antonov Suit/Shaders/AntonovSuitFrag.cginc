@@ -8,6 +8,13 @@
 					lightColor = DirLightmapDiffuse (unity_DirBasis, colorLM, scaleLM, normal,true,scalePerBasisVector);
 					lightDir = normalize (scalePerBasisVector.x * unity_DirBasis[0] + scalePerBasisVector.y * unity_DirBasis[1] + scalePerBasisVector.z * unity_DirBasis[2]);
 				}
+				
+				float ComputeFadeDistance(float3 wpos, float z)
+				{
+					float sphereDist = distance(wpos, unity_ShadowFadeCenterAndType.xyz);
+					return lerp(z, sphereDist, unity_ShadowFadeCenterAndType.w);
+				}
+				
 			#endif
 			
 			struct v2f 
@@ -18,7 +25,8 @@
 			    float3	normal		: TEXCOORD1;
 			    float4	worldPos	: TEXCOORD2;
 			    float2	uv			: TEXCOORD3;
-			    #ifdef LIGHTMAP_ON
+			    #ifdef LIGHTMAP_OFF
+				#else
 			   		float3	lightmap	: TEXCOORD4;
 			    #endif
 				LIGHTING_COORDS(5,6)
@@ -42,7 +50,8 @@
 				o.TtoW2 = mul(rotation, _Object2World[2].xyz * unity_Scale.w);	 
 				//SHADOW
 				TRANSFER_VERTEX_TO_FRAGMENT(o);
-				#ifdef LIGHTMAP_ON
+				#ifdef LIGHTMAP_OFF
+				#else
 					o.lightmap.xy = v.texcoord1.xy * unity_LightmapST.xy + unity_LightmapST.zw;
 					o.lightmap.z = 0;
 				#endif
@@ -93,27 +102,6 @@
 			    
 				half3 lightDir = normalize(i.lightDir);
 				half atten = LIGHT_ATTENUATION(i);
-				
-				//float distanceSquare = dot( i.lightDir, i.lightDir );
-				//float distanceAttenuation = 1 / ( distanceSquare + 1 );
-				
-				//#ifdef ANTONOV_FWDBASE
-				//half atten = LIGHT_ATTENUATION(i);
-				//#else
-				//half atten = sqr( saturate( 1 - sqr( distanceSquare * sqr(i.lightDir.w + 0.5) ) ) ) * distanceAttenuation;
-				//#endif
-				
-				//half4 lightDir = half4(0,0,0,0);
-				//half atten = SHADOW_ATTENUATION(i);
-				//if (0.0 == _WorldSpaceLightPos0.w) 
-		        //{
-		       		//lightDir = normalize(_WorldSpaceLightPos0);
-		        //} 
-		        //else
-		        //{
-					//half4 lightPos = _WorldSpaceLightPos0 - worldPos;
-					//lightDir = normalize(lightPos);
-		        //}
 				
 			    //BASE COLOR
 				half4 baseColor = tex2D(_MainTex, uv_base);
@@ -173,15 +161,34 @@
 					float curvature = tex2D(_RGBSkinTex,uv_base).y * _tuneCurvature;
 				#endif
 				
+				//AMBIENT
+				half3 ambient = UNITY_LIGHTMODEL_AMBIENT;
+				//half3 topLighting = saturate( dot( worldNormal, float3(0,1,0) ) * 0.5 + 0.5 );
+				//half3 ambient = lerp(UNITY_LIGHTMODEL_AMBIENT, _skyColor,topLighting);
+			
+				//half3 ambientProbe = ShadeSH9(float4(worldNormal,1));
+				
 				//LIGHTMAP
-				half3 lightmap = 1;
-				half3 attenuatedLight = lightColor * atten;
-				#ifdef LIGHTMAP_ON
+				half3 attenuatedLight = 1;
+				#ifdef LIGHTMAP_OFF
+					attenuatedLight = lightColor * atten;
+				#else
 					float4 lightmapColor = tex2D(unity_Lightmap, i.lightmap.xy);
 					#ifdef DIRLIGHTMAP_OFF
-						lightmap = DecodeLightmap(lightmapColor);
-						attenuatedLight = lightmap;
-					#endif	
+						ambient = DecodeLightmap(lightmapColor); //Single Lightmaps replace the ambient light
+					#endif
+					#ifdef DUALLIGHTMAP_ON
+						float4 lightmapColorNear = tex2D(unity_LightmapInd, i.lightmap.xy);
+						
+						float3 viewPos = mul(UNITY_MATRIX_P, worldPos);
+						float fadeDist = ComputeFadeDistance(worldPos, viewPos.z);
+						float fade = fadeDist * unity_LightmapFade.z + unity_LightmapFade.w;
+				
+						half3 lightmap = lerp(DecodeLightmap(lightmapColor),DecodeLightmap(lightmapColorNear),saturate(1-fade));
+						
+						ambient = lightmap; //Far and near lightmaps replace the ambient light
+
+					#endif								
 					#ifdef DIRLIGHTMAP_ON
 						float4 lightmapScale = tex2D(unity_LightmapInd, i.lightmap.xy);
 
@@ -192,9 +199,9 @@
 						lightDir.y = dot(i.TtoW1,  lightDirTangent);
 						lightDir.z = dot(i.TtoW2,  lightDirTangent);
 
-						lightDir = normalize(lightDir);		
-						attenuatedLight = max(min(lightColor, atten * lightmapColor.rgb), atten * lightColor);				
+						lightDir = normalize(lightDir);																																														
 					#endif
+					attenuatedLight = max(min(lightColor, atten * lightmapColor.rgb), atten * lightColor);	
 				#endif
 				
 				//VECTORS
@@ -215,7 +222,9 @@
 				//SHADOWS
 				#ifdef ANTONOV_SKIN
 					float3 skinShadow = atten; //TO FIX !!!
-					//float3 skinShadow = tex2D(_SKIN_LUT,float2(atten,.9999));
+					#ifdef ANTONOV_FWDBASE
+						skinShadow = tex2D(_SKIN_LUT,float2(atten,.9999));
+					#endif
 				#endif
 				
 				//VIEW DEPENDENT ROUGHNESS
@@ -259,13 +268,35 @@
 				#ifdef ANTONOV_METALLIC
 					diffuseDirect = 0; // Make sure we don't have any diffuse light with metal
 				#endif
-		
+				
 				#ifdef ANTONOV_DIFFUSE_LAMBERT
 					diffuseDirect = NdotL;
+					#ifdef LIGHTMAP_ON
+						#ifdef DIRLIGHTMAP_OFF
+							diffuseDirect = 0;  // With Single Lightmaps we make sure that no more diffuse light is coming as ambient is replaced by lightmaps
+						#endif
+						#ifdef DUALLIGHTMAP_ON
+							diffuseDirect = lerp(0,NdotL,saturate(1-fade)); // Dual Lightmaps support, allow to blend between far and near lightmaps
+						#endif
+						#ifdef DIRLIGHTMAP_ON
+							diffuseDirect = 1; // With Directionnal Lightmaps we make sure that no more diffuse light is coming as it is calculated directly in DirLightmapDiffuse and output in LightColor
+						#endif
+					#endif
 				#endif
-					
+
 				#ifdef ANTONOV_DIFFUSE_BURLEY
 					diffuseDirect = Burley(NdotL, NdotV, VdotH, roughness);
+					#ifdef LIGHTMAP_ON
+						#ifdef DIRLIGHTMAP_OFF
+							diffuseDirect = 0;  // With Single Lightmaps we make sure that no more diffuse light is coming as ambient is replaced by lightmaps
+						#endif
+						#ifdef DUALLIGHTMAP_ON
+							diffuseDirect = lerp(0,NdotL,saturate(1-fade)); // Dual Lightmaps support, allow to blend between far and near lightmaps
+						#endif
+						#ifdef DIRLIGHTMAP_ON
+							diffuseDirect = 1; // With Directionnal Lightmaps we make sure that no more diffuse light is coming as it is calculated directly in DirLightmapDiffuse and output in LightColor
+						#endif
+					#endif
 				#endif
 				  
 				#ifdef ANTONOV_SKIN
@@ -322,25 +353,49 @@
 				#endif
 				
 				#ifdef LIGHTMAP_ON
-					#ifdef ANTONOV_DIELECTRIC
-						attenuatedLight = Luminance(attenuatedLight);
+					#if defined  (DIRLIGHTMAP_OFF) || defined (DUALLIGHTMAP_ON)
+						#ifdef ANTONOV_DIELECTRIC
+							attenuatedLight = Luminance(ambient);
+						#endif
+						#ifdef ANTONOV_METALLIC_DIELECTRIC
+							attenuatedLight = lerp(Luminance(ambient), ambient, metallic);
+						#endif
 					#endif
-					#ifdef ANTONOV_METALLIC_DIELECTRIC
-						attenuatedLight = lerp(Luminance(attenuatedLight), attenuatedLight, metallic);
+					#ifdef DIRLIGHTMAP_ON
+						#ifdef ANTONOV_DIELECTRIC
+							attenuatedLight = Luminance(attenuatedLight);
+						#endif
+						#ifdef ANTONOV_METALLIC_DIELECTRIC
+							attenuatedLight = lerp(Luminance(attenuatedLight), attenuatedLight, metallic);
+						#endif
 					#endif	
 				#endif
 				
+				half3 specularDirect = half3(0,0,0);
 				#ifdef ANTONOV_SKIN
-					half3 specularDirect = max(D * F / dot(h, h), 0) * NdotL * attenuatedLight;
+					specularDirect = max(D * F / dot(h, h), 0) * NdotL * attenuatedLight;
 				#endif
 					
 				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
-					half3 specularDirect = D * G * F * NdotL * attenuatedLight;
-				#endif		
+					specularDirect = D * G * F * NdotL * attenuatedLight;
+				#endif
+				
+				#ifdef LIGHTMAP_ON
+					#ifdef DIRLIGHTMAP_OFF
+						specularDirect = 0; // With Single Lightmaps only IBL contribution is allowed
+					#endif
+					#ifdef DUALLIGHTMAP_ON
+						specularDirect = lerp(0,specularDirect,saturate(1-fade));
+					#endif
+				#endif				
 
 				//SPECULAR IBL
 				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					half3 specularIBL = ApproximateSpecularIBL(specular.rgb, roughness, worldNormal, -viewDir, i.worldPos, i.normal) * _exposureIBL.x;
+				#endif
+				
+				#ifdef ANTONOV_SKIN
+					specularIBL *= specularOcclusion(worldNormal, -viewDir, occlusion);
 				#endif
 				
 				//DIFFUSE IBL
@@ -351,32 +406,47 @@
 				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					half3 diffuseIBL = ApproximateDiffuseIBL(worldNormal) * _exposureIBL.y;
 				#endif
-				
-				//AMBIENT
-				half3 ambient = UNITY_LIGHTMODEL_AMBIENT;
-				//half3 topLighting = saturate( dot( worldNormal, float3(0,1,0) ) * 0.5 + 0.5 );
-				//half3 ambientIBL = DecodeRGBMLinear(texCUBE(_AmbCubeIBL,worldNormal));
-				//half3 ambient = lerp(_groundColor, _skyColor + ambientIBL,topLighting);
-			
-				half3 ambientProbe = ShadeSH9(float4(worldNormal,1));
-				
+
 				float3 backScattering = float3(0,0,0);
 				#ifdef ANTONOV_BACKSCATTERING
 					float translucency =  tex2D(_RGBSkinTex, uv_base).z;
+					translucency = translucency * translucency; // To sRGB
 					
 					half backRoughness = exp2( 8 * _backScatteringSize + 1); 
-					backScattering = exp2(saturate(dot(-viewDir, -(lightDir + (  worldNormal * 0.01)))) * backRoughness - backRoughness) * ( backRoughness / 8 );
-					backScattering += saturate( dot( -lightDir, worldNormal ) * 0.5 + 0.5 );
-					backScattering *= _backScatteringColor * translucency * attenuatedLight;
+					
+					float3 viewScattering = exp2( saturate(dot(-viewDir, -(lightDir + (  worldNormal * 0.01)))) * backRoughness - backRoughness) * ((backRoughness / 8) / 4);
+
+					float3 lightScattering = saturate( dot( -lightDir, worldNormal )) * saturate( dot( lightDir, worldNormal ) *0.5+0.5);
+
+					float3 IBLScattering = diffuseIBL;
+
+					backScattering = ((viewScattering + lightScattering) * attenuatedLight + IBLScattering) * translucency;
+					
+					float3 profile = (_backScatteringInnerColor) * backScattering*backScattering*backScattering + (_backScatteringOuterColor) * backScattering;
+
+					backScattering = profile * _backScatteringAmount;
+
+					/*
+					backScattering = -backScattering * backScattering;
+						
+					float3 profile = 
+					float3(0.233, 0.455, 0.649) * exp(backScattering / 0.0064) +
+                    float3(0.1,   0.336, 0.344) * exp(backScattering / 0.0484) +
+                    float3(0.118, 0.198, 0.0)   * exp(backScattering / 0.187)  +
+                    float3(0.113, 0.007, 0.007) * exp(backScattering / 0.567)  +
+                    float3(0.358, 0.004, 0.0)   * exp(backScattering / 1.99)   +
+                    float3(0.078, 0.0,   0.0)   * exp(backScattering / 7.41);
+                    backScattering = profile * diffuse * _backScatteringAmount;
+					*/
+
 				#endif
 											
 				#ifdef LIGHTMAP_ON
-					#ifdef  ANTONOV_INFINITE_PROJECTION
+					#ifdef  ANTONOV_INFINITE_PROJECTION 
 						// We normalize the cubemap with lightmap here for infinite projection.
 						diffuseIBL *= attenuatedLight;
-						specularIBL *= attenuatedLight;
+						specularIBL *= attenuatedLight;																																					
 					#endif
-
 				#endif
 
 				#ifdef ANTONOV_METALLIC
@@ -390,25 +460,19 @@
 					diffuse.rgb *= saturate(1.0f - specular); // We balance the diffuse with specular intensity, The Order 1886
 				#endif
 				
-				#ifdef ANTONOV_SKIN
-					diffuse.rgb *= coloredOcclusion(diffuse, occlusion);
-				#else
-					diffuse.rgb *= occlusion;
-				#endif
-				
 				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_SKIN) || defined(ANTONOV_WORKFLOW_SPECULAR)
 					#ifdef ANTONOV_FWDBASE
-						frag.rgb = (diffuseDirect + diffuseIBL + ambient) * diffuse;
-
+						frag.rgb = (diffuseDirect + (diffuseIBL + ambient) * diffuseOcclusion) * diffuse;
+						
 						frag.rgb += (specularDirect + specularIBL) * occlusion;
 						
-						frag.rgb += backScattering * occlusion;
+						frag.rgb += backScattering;
 					#else	
 						frag.rgb = diffuseDirect * diffuse;
 						
 						frag.rgb += specularDirect * occlusion;
 						
-						frag.rgb += backScattering * occlusion;
+						frag.rgb += backScattering;
 					#endif
 				#endif
 				#ifdef ANTONOV_ILLUM
@@ -419,8 +483,6 @@
 					
 					frag.rgb += illum;
 				#endif
-				
-
 
 				return frag;
 			}

@@ -1,5 +1,5 @@
 // Created by Charles Greivelding
-Shader "Hidden/G-Buffer/Specular" 
+Shader "Hidden/G-Buffer/Metallic Specular" 
 {
 	SubShader 
 	{
@@ -21,8 +21,8 @@ Shader "Hidden/G-Buffer/Specular"
 			#include "AutoLight.cginc"
 			#include "Lighting.cginc"
 			
-			#define ANTONOV_WORKFLOW_SPECULAR
-			
+			#define ANTONOV_WORKFLOW_METALLIC
+			#define ANTONOV_METALLIC_DIELECTRIC
 			#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
 
 			#include "../../AntonovSuitInput.cginc"
