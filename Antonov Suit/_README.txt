@@ -62,7 +62,7 @@ _RGB 	: R = Cavity, G = Deepness of scattering, B = Back scattering Mask.
 MicroBump_RGB	: Micro occlusion.
 MicroBump_NORM 	: Micro detail en normal map.
 
-THE SKY TOOL
+THE SKY TOOL // This tool is absolutely needed in your scene !
 
 To drop the sky tool into your scene search for the top menu called "Anotonov Suit" then look for the "Sky" object in "AntonovSuit/GameObject/Sky".
 
