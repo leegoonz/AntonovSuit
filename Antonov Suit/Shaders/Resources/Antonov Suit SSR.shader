@@ -264,6 +264,10 @@ Shader "Hidden/Antonov Suit/SSR"
 			Fog { Mode off }
 			CGPROGRAM
 			#pragma target 3.0
+			
+			#ifdef SHADER_API_OPENGL
+       			#pragma glsl
+    		#endif
 
 			#pragma fragmentoption ARB_precision_hint_fastest
 			#pragma vertex vert
@@ -277,6 +281,10 @@ Shader "Hidden/Antonov Suit/SSR"
 			Fog { Mode off }
 			CGPROGRAM
 			#pragma target 3.0
+			
+			#ifdef SHADER_API_OPENGL
+       			#pragma glsl
+    		#endif
 
 			#pragma fragmentoption ARB_precision_hint_fastest
 			#pragma vertex vert
