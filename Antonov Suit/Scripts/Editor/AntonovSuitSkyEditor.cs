@@ -22,12 +22,15 @@ public class AntonovSuitSkyEditor : Editor
 	}
 
 	AntonovSuitSky m_target;
+
+	List<GameObject> probes;
 	
 	private Object diffuseCubeObject;
 	private Object specularCubeObject;
 
 	void OnEnable()
 	{
+		probes = (target as AntonovSuitSky).probes;
 		m_target = (AntonovSuitSky)target;
 	}
 
@@ -48,17 +51,32 @@ public class AntonovSuitSkyEditor : Editor
 			m_target.ambientColor = EditorGUILayout.ColorField( "Ambient Color", m_target.ambientColor);
 			EditorGUI.indentLevel -= 1;
 
+			EditorGUILayout.Space();
+			GUILayout.Label("Probes", EditorStyles.boldLabel);
+			EditorGUILayout.Space();
+
 			GUILayout.BeginHorizontal();
 			if (GUILayout.Button("Add Probe",buttonStyle))
 			{
-				GameObject go = new GameObject("Probe!");
+				string probeName = "Probe_" + probes.Count.ToString();
+				GameObject newProbes = new GameObject(probeName);
+				
 				if (Selection.activeTransform != null)
 				{
-					go.transform.parent = Selection.activeTransform;
-					go.transform.position = go.transform.parent.position;
-					go.AddComponent<AntonovSuitProbe>();
-					Undo.RegisterCreatedObjectUndo(go, "Add Probe");
+					newProbes.transform.parent = Selection.activeTransform;
+					newProbes.transform.position = newProbes.transform.parent.position;
+					newProbes.AddComponent<AntonovSuitProbe>();
+					probes.Add(newProbes);
+					Undo.RegisterCreatedObjectUndo(newProbes, "Add Probe");
 				}
+			}
+			GUILayout.EndHorizontal();
+			GUILayout.BeginHorizontal();
+			if( GUILayout.Button("Remove Probe",buttonStyle))
+			{
+				foreach( GameObject probe in probes )
+					DestroyImmediate( probe.gameObject, false );
+				probes.Clear();
 			}
 			GUILayout.EndHorizontal();
 

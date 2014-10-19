@@ -1,3 +1,9 @@
+v0.052
+
+Added "Remove Prove" to the sky tool
+
+Changed sky editor code to add numbers in the name
+
 v0.051
 
 Added dual lightmaps support, use #define DUALLIGHTMAP_ON to enable it, see _ReadMe

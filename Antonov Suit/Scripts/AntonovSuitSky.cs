@@ -11,8 +11,8 @@ using System.IO;
 public class AntonovSuitSky : MonoBehaviour 
 {
 
+	public List<GameObject> probes;
 
-	//public GameObject[] probeObjects;
 	private Texture skinLUT;
 	private Texture envSkinLUT;
 	private Texture envLUT;
