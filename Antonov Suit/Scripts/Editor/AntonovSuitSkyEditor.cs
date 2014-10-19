@@ -24,7 +24,8 @@ public class AntonovSuitSkyEditor : Editor
 	AntonovSuitSky m_target;
 
 	List<GameObject> probes;
-	
+
+	private Object skyboxObject;
 	private Object diffuseCubeObject;
 	private Object specularCubeObject;
 
@@ -43,17 +44,19 @@ public class AntonovSuitSkyEditor : Editor
 			buttonStyle.padding = new RectOffset(8, 8, 8, 8);
 
 			EditorGUILayout.Space();
-			GUILayout.Label("Ambient Settings", EditorStyles.boldLabel);
-			EditorGUILayout.Space();
+			GUILayout.Label("Render Settings", EditorStyles.boldLabel);
+			//EditorGUILayout.Space();
 
 			EditorGUI.indentLevel += 1;
 			//m_target.ambientSkyColor = EditorGUILayout.ColorField( "Ambient Sky Color", m_target.ambientSkyColor);
-			m_target.ambientColor = EditorGUILayout.ColorField( "Ambient Color", m_target.ambientColor);
+			m_target.ambientColor = EditorGUILayout.ColorField( "Ambient Light", m_target.ambientColor);
+			skyboxObject = EditorGUILayout.ObjectField("Skybox Material", m_target.skyBoxMaterial, typeof(Material), false);
+			m_target.skyBoxMaterial = (Material)skyboxObject;
 			EditorGUI.indentLevel -= 1;
 
 			EditorGUILayout.Space();
 			GUILayout.Label("Probes", EditorStyles.boldLabel);
-			EditorGUILayout.Space();
+			//EditorGUILayout.Space();
 
 			GUILayout.BeginHorizontal();
 			if (GUILayout.Button("Add Probe",buttonStyle))
@@ -81,24 +84,22 @@ public class AntonovSuitSkyEditor : Editor
 			GUILayout.EndHorizontal();
 
 			EditorGUILayout.Space();
-			GUILayout.Label("General Cubemap Settings", EditorStyles.boldLabel);
-			EditorGUILayout.Space();
+			GUILayout.Label("Cubemap Settings", EditorStyles.boldLabel);
+			//EditorGUILayout.Space();
 
-			GUILayout.Label("General Diffuse Cubemap");
-			EditorGUILayout.BeginHorizontal();	
-			diffuseCubeObject = EditorGUILayout.ObjectField(m_target.diffuseCube, typeof(Cubemap), false, GUILayout.MinHeight(64), GUILayout.MinWidth(64), GUILayout.MaxWidth(64));
-			m_target.diffuseCube = (Cubemap)diffuseCubeObject;
-
+			EditorGUI.indentLevel += 1;
 			m_target.diffuseExposure = EditorGUILayout.FloatField("Diffuse Exposure",m_target.diffuseExposure);
+			EditorGUILayout.BeginHorizontal();	
+			diffuseCubeObject = EditorGUILayout.ObjectField("Diffuse Cubemap",m_target.diffuseCube, typeof(Cubemap), false);
+			m_target.diffuseCube = (Cubemap)diffuseCubeObject;
 			EditorGUILayout.EndHorizontal();
-
-			GUILayout.Label("General Specular Cubemap");
-			EditorGUILayout.BeginHorizontal();
-			specularCubeObject = EditorGUILayout.ObjectField(m_target.specularCube, typeof(Cubemap), false, GUILayout.MinHeight(64), GUILayout.MinWidth(64), GUILayout.MaxWidth(64));
-			m_target.specularCube = (Cubemap)specularCubeObject;
 
 			m_target.specularExposure = EditorGUILayout.FloatField("Specular Exposure",m_target.specularExposure);
+			EditorGUILayout.BeginHorizontal();
+			specularCubeObject = EditorGUILayout.ObjectField("Specular Cubemap",m_target.specularCube, typeof(Cubemap), false);
+			m_target.specularCube = (Cubemap)specularCubeObject;
 			EditorGUILayout.EndHorizontal();
+			EditorGUI.indentLevel -= 1;
 		}
 	}
 }

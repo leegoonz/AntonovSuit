@@ -16,9 +16,10 @@ public class AntonovSuitSky : MonoBehaviour
 	private Texture skinLUT;
 	private Texture envSkinLUT;
 	private Texture envLUT;
+
+	public Material skyBoxMaterial = null;
 	
 	public Color ambientColor = new Color(0.5f,0.5f,0.5f,0.0f);
-	//public Color ambientSkyColor = new Color(0.0f,0.5f,1.0f,0.0f);
 
 	public Cubemap diffuseCube = null;
 	public float diffuseExposure = 1;
@@ -70,8 +71,10 @@ public class AntonovSuitSky : MonoBehaviour
 		envLUT = Resources.Load("GGX_SMITH_LUT",typeof(Texture)) as Texture;
 	}
 
-	public void DoShaderUpdate()
+	public void DoUpdate()
 	{
+
+		RenderSettings.skybox = skyBoxMaterial;
 
 		GetCubemapSize();
 
@@ -81,7 +84,6 @@ public class AntonovSuitSky : MonoBehaviour
 			Shader.SetGlobalTexture("_SpecCubeIBL", specularCube);
 
 		RenderSettings.ambientLight = ambientColor;
-		//Shader.SetGlobalColor("_skyColor",ambientSkyColor);
 
 		Shader.SetGlobalVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,1,1));
 		Shader.SetGlobalTexture("_SKIN_LUT", skinLUT);
@@ -97,13 +99,13 @@ public class AntonovSuitSky : MonoBehaviour
 
 	public void Update () 
 	{
-		DoShaderUpdate();
+		DoUpdate();
 	}
 
 	public void OnDrawGizmos () 
 	{
 		GetAntonovSuitTexture();
-		DoShaderUpdate();
+		DoUpdate();
 
 		Gizmos.DrawIcon(transform.position, "../Antonov Suit/Resources/sky.tga", true);
 
