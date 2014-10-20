@@ -56,7 +56,8 @@ public class AntonovSuitSky : MonoBehaviour
 
 	public void GetCubemapSize()
 	{
-		specularSize = specularCube.height;
+		if(specularCube != null)
+			specularSize = specularCube.height;
 
 		int lod = CubeLodSetup();
 		
@@ -85,6 +86,7 @@ public class AntonovSuitSky : MonoBehaviour
 
 		RenderSettings.ambientLight = ambientColor;
 
+
 		Shader.SetGlobalVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,1,1));
 		Shader.SetGlobalTexture("_SKIN_LUT", skinLUT);
 		Shader.SetGlobalTexture("_ENV_LUT", envLUT);
@@ -92,8 +94,14 @@ public class AntonovSuitSky : MonoBehaviour
 		Shader.SetGlobalInt("_lodSpecCubeIBL", specularExponent);
 	}
 
+	public void OnEnable()
+	{
+		//Shader.EnableKeyword("ANTONOV_INFINITE_PROJECTION");
+	}
+
 	public void Awake()
 	{
+
 		GetAntonovSuitTexture();
 	}
 
