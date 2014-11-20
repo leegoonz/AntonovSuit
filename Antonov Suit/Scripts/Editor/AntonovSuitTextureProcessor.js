@@ -7,14 +7,14 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
 	function OnPreprocessTexture () 
 	{
 	
-		var textureSize : int = 512;
+		var textureSize : int = 2048;
 	
 		if (assetPath.Contains("_COLOR") || assetPath.Contains("_ILLUM") || assetPath.Contains("_DIFF"))  
 		{
         	var diffuseTextureImporter : TextureImporter = assetImporter;
         	diffuseTextureImporter.isReadable = true;
         	diffuseTextureImporter.textureType = TextureImporterType.Image;
-        	diffuseTextureImporter.filterMode = FilterMode.Point;
+        	diffuseTextureImporter.filterMode = FilterMode.Trilinear;
         	diffuseTextureImporter.anisoLevel = 9;
         	diffuseTextureImporter.textureFormat = TextureImporterFormat.DXT1;
         	diffuseTextureImporter.maxTextureSize  = textureSize;
@@ -24,7 +24,7 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
         	var diffuseAlphaTextureImporter : TextureImporter = assetImporter;
         	diffuseAlphaTextureImporter.isReadable = true;
         	diffuseAlphaTextureImporter.textureType = TextureImporterType.Image;
-        	diffuseAlphaTextureImporter.filterMode = FilterMode.Point;
+        	diffuseAlphaTextureImporter.filterMode = FilterMode.Trilinear;
         	diffuseAlphaTextureImporter.anisoLevel = 9;
         	diffuseAlphaTextureImporter.textureFormat = TextureImporterFormat.DXT5;
         	diffuseAlphaTextureImporter.maxTextureSize  = textureSize;
@@ -34,7 +34,7 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
         	var specularTextureImporter : TextureImporter = assetImporter;
         	specularTextureImporter.isReadable = true;
         	specularTextureImporter.textureType = TextureImporterType.Image;
-        	specularTextureImporter.filterMode = FilterMode.Point;
+        	specularTextureImporter.filterMode = FilterMode.Trilinear;
         	specularTextureImporter.anisoLevel = 9;
         	specularTextureImporter.textureFormat = TextureImporterFormat.DXT1;
         	specularTextureImporter.maxTextureSize  = textureSize;
@@ -44,7 +44,7 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
         	var RGBTextureImporter : TextureImporter = assetImporter;
         	RGBTextureImporter.isReadable = true;
         	RGBTextureImporter.textureType = TextureImporterType.Advanced;
-        	RGBTextureImporter.filterMode = FilterMode.Point;
+        	RGBTextureImporter.filterMode = FilterMode.Trilinear;
         	RGBTextureImporter.anisoLevel = 9;
         	RGBTextureImporter.linearTexture = true;
         	RGBTextureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
@@ -80,7 +80,7 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
         	var normalTextureImporter : TextureImporter = assetImporter;
         	normalTextureImporter.isReadable = true;
         	normalTextureImporter.textureType = TextureImporterType.Bump;
-        	normalTextureImporter.filterMode = FilterMode.Point;
+        	normalTextureImporter.filterMode = FilterMode.Trilinear;
         	normalTextureImporter.anisoLevel = 9;   
         	normalTextureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
         	normalTextureImporter.maxTextureSize  = textureSize;	
