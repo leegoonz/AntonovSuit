@@ -4,22 +4,32 @@
 #define ANTONOV_SUIT_INPUT_CGINC
 
 half4		_exposureIBL;
-
+float		_timeCube;
 #ifdef SHADER_API_D3D11
 half		_Cutoff;
 #endif
 
-#if defined(ANTONOV_SPHERE_PROJECTION) || defined(ANTONOV_BOX_PROJECTION)
+#ifdef ANTONOV_PLANAR_REFLECTION
+sampler2D	_ReflectionTex;
+#endif
+
+//Define the max amount of probe used
+int _NumIndex;
+
+// 0 Bake cubemap
+// 1 Importance Sampling
+int ANTONOV_IMPORTANCE_SAMPLING;
+
+// 0 Infinite
+// 1 Sphere
+// 2 Box
+int ANTONOV_PROJECTION;
+
 float4x4	_WorldToCube;
 float4x4	_WorldToCubeInverse;
-float		_cubemapScale;
-float3		_cubemapPos;
-float3		_cubemapBoxSize;
-	#ifdef ANTONOV_CUBEMAP_ATTEN
-		float		_attenSphereRadius;
-		float3		_attenBoxSize;
-	#endif
-#endif
+
+float4		_cubemapPosScale;
+float4		_cubemapBoxSize;
 
 //LIGHTMAP
 #ifndef LIGHTMAP_OFF
@@ -108,7 +118,8 @@ samplerCUBE _DiffCubeIBL;
 int 		_diffuseSize;
 		
 //SPECULAR IBL
-samplerCUBE _SpecCubeIBL;	
+samplerCUBE _SpecCubeIBL;
+
 sampler2D	_ENV_LUT;
 int 		_specularSize;
 int 		_lodSpecCubeIBL;
@@ -132,9 +143,11 @@ half		_horyzonOcclusion;
 //G-Buffer
 sampler2D	_Specular_GBUFFER;
 sampler2D	_WorldNormal_GBUFFER;
+sampler2D	_Reflection_GBUFFER; 
 sampler2D	_Reflection_Pass; 
 
 sampler2D	_Jitter;
+sampler2D	_Dither;
 sampler2D	_CameraDepthTexture;
 
 float4		_CameraDepthTexture_ST;

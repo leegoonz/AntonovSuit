@@ -22,7 +22,7 @@ Shader "Antonov Suit/Metallic Workflow/Transparent/Cutout/DoubleSided/Dielectric
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
 		
-		_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
+		//_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
 	}
 	SubShader 
 	{

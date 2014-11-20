@@ -1,6 +1,34 @@
+v0.055
+
+Added new specular occlusion
+
+Fixed issue with value being reset with probe tool
+
+Preview probe only happend OnDrawGizmosSelected()
+
+Changed probe object assignement à la Lux style
+Changed sky probe object remove behavior, you don't have to remove everything now
+
+Refactored AntonovSuitProbeEditor code
+
+Removed gizmo rotation as it was not working properly, use sphere projection if box projection can not fit
+Removed attenuation selection, now it is always on
+Removed probe tool item from top Unity menu
+
+Renamed AntonovSuitSky to AntonovSuitManager ( no more confusion with Marmoset Sky )
+Renmade Lookup Generator to Antonov Suit Lookup Generator
+
+Updated Documentations
+
+v0.053
+
+Fixed NullReferenceException Gameobject[] for sky and probe tool
+Fixed speed issue while using more than 8 probes
+Fixed convolution issue while using fog
+
 v0.052
 
-Added "Remove Prove" to the sky tool
+Added "Remove Probe" to the sky tool
 
 Changed sky editor code to add numbers in the name
 

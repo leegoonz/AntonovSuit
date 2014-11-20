@@ -7,11 +7,10 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 
-
-public class AntonovSuitSky : MonoBehaviour 
+[ExecuteInEditMode]
+public class AntonovSuitManager : MonoBehaviour 
 {
-
-	public List<GameObject> probes;
+	public List<GameObject> probes = new List<GameObject>();
 
 	private Texture skinLUT;
 	private Texture envSkinLUT;
@@ -20,6 +19,7 @@ public class AntonovSuitSky : MonoBehaviour
 	public Material skyBoxMaterial = null;
 	
 	public Color ambientColor = new Color(0.5f,0.5f,0.5f,0.0f);
+
 
 	public Cubemap diffuseCube = null;
 	public float diffuseExposure = 1;
@@ -31,7 +31,6 @@ public class AntonovSuitSky : MonoBehaviour
 
 	public int CubeLodSetup()
 	{
-		
 		int result= 0;
 		
 		if(specularSize == 64)
@@ -65,6 +64,7 @@ public class AntonovSuitSky : MonoBehaviour
 
 	}
 
+
 	public void GetAntonovSuitTexture()
 	{
 		skinLUT = Resources.Load("SKIN_LUT",typeof(Texture)) as Texture;
@@ -74,48 +74,42 @@ public class AntonovSuitSky : MonoBehaviour
 
 	public void DoUpdate()
 	{
-
-		RenderSettings.skybox = skyBoxMaterial;
+		if(skyBoxMaterial != null)
+			RenderSettings.skybox = skyBoxMaterial;
 
 		GetCubemapSize();
 
 		if(diffuseCube != null)
-			Shader.SetGlobalTexture("_DiffCubeIBL", diffuseCube);
+			Shader.SetGlobalTexture("_SkyDiffCubeIBL", diffuseCube);
 		if(specularCube != null)
-			Shader.SetGlobalTexture("_SpecCubeIBL", specularCube);
+			Shader.SetGlobalTexture("_SkySpecCubeIBL", specularCube);
 
 		RenderSettings.ambientLight = ambientColor;
-
 
 		Shader.SetGlobalVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,1,1));
 		Shader.SetGlobalTexture("_SKIN_LUT", skinLUT);
 		Shader.SetGlobalTexture("_ENV_LUT", envLUT);
 		Shader.SetGlobalTexture("_ENV_SKIN_LUT", envSkinLUT);
-		Shader.SetGlobalInt("_lodSpecCubeIBL", specularExponent);
+
 	}
 
-	public void OnEnable()
+	void Start()
 	{
-		//Shader.EnableKeyword("ANTONOV_INFINITE_PROJECTION");
+
 	}
 
 	public void Awake()
 	{
-
 		GetAntonovSuitTexture();
 	}
 
-	public void Update () 
+	public void LateUpdate () 
 	{
 		DoUpdate();
 	}
 
 	public void OnDrawGizmos () 
 	{
-		GetAntonovSuitTexture();
-		DoUpdate();
-
 		Gizmos.DrawIcon(transform.position, "../Antonov Suit/Resources/sky.tga", true);
-
 	}
 }

@@ -11,7 +11,7 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		//_toksvigFactor("Toksvig Factor", Range (0.0,1)) = 0.0
 			
 		_occlusionAmount ("Occlusion Amount", Range (0,1)) = 1.0
-		//_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 0.0
+		_horyzonOcclusion("Horyzon Occlusion Amount", Range (0,1)) = 0.0
 		
 		_RGBTex ("Metallic (R), Roughness (G), Occlusion (B)", 2D) = "white" {}
 			
@@ -42,9 +42,7 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		#include "UnityShaderVariables.cginc"
 		
 		//ANTONOV SUIT STUFF
-		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
-		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
-		
+
 		// Workflow
 		#define ANTONOV_WORKFLOW_METALLIC
 		
@@ -60,7 +58,7 @@ Shader "Antonov Suit/Metallic Workflow/Metallic"
 		// Optional features
 		//#define ANTONOV_TOKSVIG
 		#define ANTONOV_VIEW_DEPENDENT_ROUGHNESS
-		//#define ANTONOV_HORYZON_OCCLUSION
+		#define ANTONOV_HORYZON_OCCLUSION
 
 		#include "AntonovSuitInput.cginc"
 		#include "AntonovSuitLib.cginc"

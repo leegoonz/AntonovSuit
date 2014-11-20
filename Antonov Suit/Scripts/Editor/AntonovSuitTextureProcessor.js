@@ -6,46 +6,49 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
 {
 	function OnPreprocessTexture () 
 	{
+	
+		var textureSize : int = 512;
+	
 		if (assetPath.Contains("_COLOR") || assetPath.Contains("_ILLUM") || assetPath.Contains("_DIFF"))  
 		{
         	var diffuseTextureImporter : TextureImporter = assetImporter;
         	diffuseTextureImporter.isReadable = true;
         	diffuseTextureImporter.textureType = TextureImporterType.Image;
-        	diffuseTextureImporter.filterMode = FilterMode.Trilinear;
+        	diffuseTextureImporter.filterMode = FilterMode.Point;
         	diffuseTextureImporter.anisoLevel = 9;
         	diffuseTextureImporter.textureFormat = TextureImporterFormat.DXT1;
-        	diffuseTextureImporter.maxTextureSize  = 4096;
+        	diffuseTextureImporter.maxTextureSize  = textureSize;
 		}
 		if (assetPath.Contains("_COLORA") || assetPath.Contains("_DIFFA"))  
 		{
         	var diffuseAlphaTextureImporter : TextureImporter = assetImporter;
         	diffuseAlphaTextureImporter.isReadable = true;
         	diffuseAlphaTextureImporter.textureType = TextureImporterType.Image;
-        	diffuseAlphaTextureImporter.filterMode = FilterMode.Trilinear;
+        	diffuseAlphaTextureImporter.filterMode = FilterMode.Point;
         	diffuseAlphaTextureImporter.anisoLevel = 9;
         	diffuseAlphaTextureImporter.textureFormat = TextureImporterFormat.DXT5;
-        	diffuseAlphaTextureImporter.maxTextureSize  = 4096;
+        	diffuseAlphaTextureImporter.maxTextureSize  = textureSize;
 		}
 		if (assetPath.Contains("_SPEC"))  
 		{
         	var specularTextureImporter : TextureImporter = assetImporter;
         	specularTextureImporter.isReadable = true;
         	specularTextureImporter.textureType = TextureImporterType.Image;
-        	specularTextureImporter.filterMode = FilterMode.Trilinear;
+        	specularTextureImporter.filterMode = FilterMode.Point;
         	specularTextureImporter.anisoLevel = 9;
         	specularTextureImporter.textureFormat = TextureImporterFormat.DXT1;
-        	specularTextureImporter.maxTextureSize  = 4096;
+        	specularTextureImporter.maxTextureSize  = textureSize;
 		}
 		if (assetPath.Contains("_RGB")) 
 		{
         	var RGBTextureImporter : TextureImporter = assetImporter;
         	RGBTextureImporter.isReadable = true;
         	RGBTextureImporter.textureType = TextureImporterType.Advanced;
-        	RGBTextureImporter.filterMode = FilterMode.Trilinear;
+        	RGBTextureImporter.filterMode = FilterMode.Point;
         	RGBTextureImporter.anisoLevel = 9;
         	RGBTextureImporter.linearTexture = true;
         	RGBTextureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
-        	RGBTextureImporter.maxTextureSize  = 4096;
+        	RGBTextureImporter.maxTextureSize  = textureSize;
 		}
 		if (assetPath.Contains("_LUT")) 
 		{
@@ -77,10 +80,10 @@ class AntonovSuitTextureProcessor extends AssetPostprocessor
         	var normalTextureImporter : TextureImporter = assetImporter;
         	normalTextureImporter.isReadable = true;
         	normalTextureImporter.textureType = TextureImporterType.Bump;
-        	normalTextureImporter.filterMode = FilterMode.Trilinear;
+        	normalTextureImporter.filterMode = FilterMode.Point;
         	normalTextureImporter.anisoLevel = 9;   
         	normalTextureImporter.textureFormat = TextureImporterFormat.AutomaticCompressed;
-        	normalTextureImporter.maxTextureSize  = 4096;	
+        	normalTextureImporter.maxTextureSize  = textureSize;	
 		}
 	}
 }

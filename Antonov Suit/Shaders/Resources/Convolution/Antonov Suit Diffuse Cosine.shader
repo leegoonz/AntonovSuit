@@ -10,6 +10,16 @@
 	{
 		Pass 
 		{
+			Tags 
+			{ 
+				"Queue"="Background"
+				"RenderType"="Background"
+			}
+			
+			Cull Off 
+			ZWrite Off 
+			Fog { Mode Off }
+			
 			CGPROGRAM
 			#pragma vertex vert
 			#pragma fragment frag 

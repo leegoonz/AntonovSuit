@@ -89,7 +89,7 @@ Shader "Hidden/Antonov Suit/SSR"
 		        samplePos += rayDir;
 			}
 		}
-
+		
 		//#if UNITY_UV_STARTS_AT_TOP
 		//if (_MainTex_TexelSize.y < 0)
 		//samplePos.y = 1-samplePos.y;
@@ -98,6 +98,9 @@ Shader "Hidden/Antonov Suit/SSR"
 		return float4(samplePos, sampleMask);
 
 	}
+	
+	float _Test1;
+	float _Test2;
 
 	float4 fragSSR (v2f i) : COLOR
 	{	
@@ -112,6 +115,8 @@ Shader "Hidden/Antonov Suit/SSR"
 					
 		//SPECULAR AND ROUGHNESS
 		float4 specular = tex2D(_Specular_GBUFFER,i.uv);
+		
+		float3 specularReflection = DecodeRGBMLinear(tex2D(_Reflection_GBUFFER,i.uv));
 		
 		float roughness = specular.a; 
         roughness = min(_maxRoughness*_maxRoughness,roughness); 
@@ -141,17 +146,16 @@ Shader "Hidden/Antonov Suit/SSR"
 		float4 reflectionColor = float4(0,0,0,0);
 		float4 bounceColor = float4(0,0,0,0);
 		
-		int NumRays = 5;
-		int NumSteps = 80;
+		int NumRays = 1;
+		int NumSteps = 100;
 
 			for( int i = 0; i < NumRays; i++ )
 			{
 
-				float3 stepOffset = tex2D( _Jitter, coord * _ScreenParams.xy / 128 );
+				float3 stepOffset = tex2D( _Dither, coord * _ScreenParams.xy / 4 );
 				
-
-				float2 Xi = Hammersley(i, NumRays);
-				//float3 Xi = tex2D( _Jitter, coord * _ScreenParams.xy / 128 );
+				//float2 Xi = Hammersley(i, NumRays);
+				float3 Xi = tex2D( _Jitter, coord * _ScreenParams.xy / 128 );
 
 				//float3 L = ImportanceSampleHemisphereCosine( Xi, viewNormal); // GI Test
 				float3 H = ImportanceSampleGGX( Xi,roughness, viewNormal);
@@ -159,37 +163,30 @@ Shader "Hidden/Antonov Suit/SSR"
 				float3 R = 2 * dot(-viewPos.rgb,H) * H - (-viewPos.rgb);
 				//float3 R = reflect(viewPos,viewNormal);
 			
-				float4 ray = RayMarch(R, NumSteps, viewPos, scrPos, coord, stepOffset);
-				ray.xyz = lerp(-viewPos, ray.xyz, alpha);
+				float4 ray = RayMarch(R, NumSteps, viewPos, scrPos, coord, stepOffset.x);
+				//ray.xyz = lerp(-viewPos, ray.xyz, alpha);
 				
-				if( ray.w <= 1 )
-				{
-					float borderDist = min(1-max(ray.x, ray.y), min(ray.x, ray.y));
-					float borderAtten = saturate(borderDist > _edgeFactor ? 1 : borderDist / _edgeFactor);
-					float dirAtten = 1-saturate( dot( -viewDir,worldNormal ));
-
-					float NdotV = saturate(dot( worldNormal ,-viewDir ));   
-					float3 F = F_LazarovApprox( specular.rgb,specular.a, NdotV);				
-
-					reflectionColor.rgb += tex2D(_MainTex, ray.xy) * ray.w * borderAtten * dirAtten * F;
-					reflectionColor.a = borderAtten;
-					//frag.rgb = ray.rgb;
-					//bounceColor.rgb += tex2D(_MainTex, ray.xy) * ray.w * borderAtten * dirAtten;
-				}
+				float borderDist = min(1-max(ray.x, ray.y), min(ray.x, ray.y));
+				float borderAtten = saturate(borderDist > _edgeFactor ? 1 : borderDist / _edgeFactor);
+				//float dirAtten = 1-saturate( dot( -viewDir,worldNormal )*_Test1-_Test2);
+				float dirAtten = pow(1-saturate( dot( -viewDir,worldNormal )*1.15),1.8);
 				
+				float NdotV = saturate(dot( worldNormal ,-viewDir ));   
+				float3 F = F_LazarovApprox( specular.rgb,specular.a, NdotV);				
+
+				reflectionColor.rgb += tex2D(_MainTex, ray.xy)*ray.w * F;
+				reflectionColor.a = borderAtten * dirAtten;
+
+				//bounceColor.rgb += tex2D(_MainTex, ray.xy) * ray.w * borderAtten * dirAtten;
 			}
 			reflectionColor /= NumRays;
 			//bounceColor /= NumRays;
-			
-			//half3 specularIBL = ApproximateSpecularIBL( specular.rgb, roughness, worldNormal, -viewDir, worldPos, float3(0,0,1) );
-		
-			//float3 final = lerp(bbb,reflectionColor.rgb* _reflectionStrength, saturate(reflectionColor.a *100));			
 
-		//frag.rgb = lerp(bbb,reflectionColor.rgb * _reflectionStrength, saturate(reflectionColor.a *1000)) * alpha;
-		frag.rgb = (bounceColor.rgb + reflectionColor.rgb * _reflectionStrength);
+			reflectionColor.rgb = lerp(specularReflection.rgb,reflectionColor.rgb* _reflectionStrength, saturate(reflectionColor.a*100));			
+
+		frag.rgb = (bounceColor.rgb + reflectionColor.rgb);
 		
 		return  HDRtoRGBM(frag); 
-
 	}
 
 	float4 fragCompose( v2f i ) : COLOR
@@ -206,9 +203,6 @@ Shader "Hidden/Antonov Suit/SSR"
 	
 	float4 fragBlur(v2f i) : COLOR
 	{	
-
-		float depth = LinearEyeDepth(tex2D(_CameraDepthTexture, i.uv).x);
-
 		int uBlurSize = 4; // use size of noise texture
 
 		float2 texelSize = _reflectionBlur / _ScreenParams.xy;
@@ -228,20 +222,19 @@ Shader "Hidden/Antonov Suit/SSR"
 		}
 	 
 		return HDRtoRGBM(result / float(uBlurSize * uBlurSize));
-		
 	}
 	
 	float4 fragBlurX(v2f i) : COLOR
 	{	
 		float roughness = tex2D(_Specular_GBUFFER,i.uv).a;
-		roughness = roughness*roughness;
+		roughness = roughness*4;
 		return gaussianBlurX( _Reflection_Pass,i.uv, _ScreenParams.xy, _reflectionBlur *roughness );
 	}
 	
 	float4 fragBlurY(v2f i) : COLOR
 	{	
 		float roughness = tex2D(_Specular_GBUFFER,i.uv).a;
-		roughness = roughness*roughness;
+		roughness = roughness*4;
 		return gaussianBlurY( _Reflection_Pass,i.uv, _ScreenParams.xy, _reflectionBlur * roughness );
 	}
 

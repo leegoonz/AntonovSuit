@@ -28,7 +28,7 @@ Shader "Antonov Suit/Metallic Workflow/Self-Illumin/Metallic and Dielectric"
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
 		
-		_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
+		//_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
 	}
 	SubShader 
 	{

@@ -11,97 +11,31 @@ using System.IO;
 public class AntonovSuitProbeEditor : Editor
 {
 
-
-
-	private SerializedObject m_AntonovSuitProbe;
 	AntonovSuitProbe m_target;
 
-	private SerializedProperty m_cubemapRadius;
-	private SerializedProperty m_cubemapBoxSize;
-	private SerializedProperty m_diffuseSamples;
-	private SerializedProperty m_specularSamples;
-	private SerializedProperty m_cubemapFolder;
-	private SerializedProperty m_cubemapName;
-	private SerializedProperty m_diffuseSize;
-	private SerializedProperty m_specularSize;
-	private SerializedProperty m_smoothEdge;
-	//private SerializedProperty m_edgeScale;
-	private SerializedProperty m_Meshes;
-	private SerializedProperty m_specularExposure;
-	private SerializedProperty m_diffuseExposure;
+	private List<GameObject> Meshes = new List<GameObject>();
 
-	private SerializedProperty m_irradianceModel;
-	private SerializedProperty m_radianceModel;
-	private SerializedProperty m_projectionType;
-
-	//private SerializedProperty m_bakeDirectAndIBL;
-
-	//Attenuation
-	private SerializedProperty m_atten;
-	private SerializedProperty m_attenRadius;
-	private SerializedProperty m_attenBoxSize;
+	//private GameObject Meshes = new GameObject();
+	private GameObject m_Meshes = null;
 
 	private Object diffuseCubeObject;
 	private Object specularCubeObject;
 
-	private Object test;
-
+	static bool c_showMeshes = false;
 	static bool c_showCube = true;
 	static bool c_showSmoothEdge = true;
 
 	static bool c_showSphereProjection = false;
 	static bool c_showBoxProjection = false;
-
+	
 	void OnEnable()
 	{
 		m_target = (AntonovSuitProbe)target;
-		m_AntonovSuitProbe = new SerializedObject(target);
-
-		m_cubemapRadius = m_AntonovSuitProbe.FindProperty("probeRadius");
-		m_cubemapBoxSize = m_AntonovSuitProbe.FindProperty("probeBoxSize");
-
-		m_diffuseSamples = m_AntonovSuitProbe.FindProperty("diffuseSamples");
-		m_specularSamples = m_AntonovSuitProbe.FindProperty("specularSamples");
-		
-		m_cubemapFolder = m_AntonovSuitProbe.FindProperty("cubemapFolder");
-		m_cubemapName = m_AntonovSuitProbe.FindProperty("cubemapName");
-		m_diffuseSize = m_AntonovSuitProbe.FindProperty("diffuseSize");
-		m_specularSize = m_AntonovSuitProbe.FindProperty("specularSize");
-		m_smoothEdge = m_AntonovSuitProbe.FindProperty("smoothEdge");
-		//m_edgeScale = m_AntonovSuitProbe.FindProperty("edgeScale");
-		m_Meshes = m_AntonovSuitProbe.FindProperty("Meshes");
-
-		m_irradianceModel = m_AntonovSuitProbe.FindProperty("irradianceModel");
-		m_radianceModel = m_AntonovSuitProbe.FindProperty("radianceModel");
-		m_projectionType = m_AntonovSuitProbe.FindProperty("typeOfProjection");
-
-		m_atten = m_AntonovSuitProbe.FindProperty("useAtten");
-		m_attenRadius = m_AntonovSuitProbe.FindProperty("attenSphereRadius");
-		m_attenBoxSize = m_AntonovSuitProbe.FindProperty("attenBoxSize");
-
-		m_diffuseExposure = m_AntonovSuitProbe.FindProperty("diffuseExposure");
-		m_specularExposure = m_AntonovSuitProbe.FindProperty("specularExposure");
-
-		//m_bakeDirectAndIBL = m_AntonovSuitProbe.FindProperty("bakeDirectAndIBL");
-	}
-
-	[MenuItem ("Antonov Suit/GameObject/Cubemap Probe")]
-	public static  AntonovSuitProbe addAntonovSuitProbe() 
-	{
-		GameObject go = new GameObject("AntonovSuitProbe");
-		go.AddComponent("AntonovSuitProbe");
-		//go.renderer.sharedMaterial = new Material(Shader.Find("Hidden/Probe"));
-
-
-		Selection.activeGameObject = go;
-		AntonovSuitProbe s_AntonovSuitProbe = go.GetComponent<AntonovSuitProbe>();
-
-		Undo.RegisterCreatedObjectUndo(go, "Add Probe");
-		return s_AntonovSuitProbe;
 	}
 
 	public override void OnInspectorGUI()
 	{
+
 		GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
 		buttonStyle.margin = new RectOffset(4,4,8,8);
 		buttonStyle.padding = new RectOffset(8, 8, 8, 8);
@@ -116,21 +50,16 @@ public class AntonovSuitProbeEditor : Editor
 		EditorGUILayout.Space();
 
 		EditorGUI.indentLevel += 1;
-
-			EditorGUILayout.PropertyField(m_cubemapFolder, new GUIContent("Output Path"));
-			EditorGUILayout.PropertyField(m_cubemapName, new GUIContent("Cubemap Name"));
+			
+			m_target.cubemapFolder = EditorGUILayout.TextField("Output Path", m_target.cubemapFolder);
+			m_target.cubemapName = EditorGUILayout.TextField("Cubemap Name", m_target.cubemapName);
 
 			c_showCube = EditorGUILayout.Foldout(c_showCube, "Cubemap Settings" );
 			if(c_showCube)
 			{
 				EditorGUI.indentLevel += 1;
-					//EditorGUILayout.PropertyField(m_diffuseSize, new GUIContent("Diffuse Face Size"));
-
-					m_diffuseSize.enumValueIndex = (int)(AntonovSuitProbe.facesSize)EditorGUILayout.EnumPopup("Diffuse Face Size", (AntonovSuitProbe.facesSize)AntonovSuitProbe.facesSize.GetValues(typeof(AntonovSuitProbe.facesSize)).GetValue(m_diffuseSize.enumValueIndex));
-
-					m_specularSize.enumValueIndex = (int)(AntonovSuitProbe.facesSize)EditorGUILayout.EnumPopup("Specular Face Size", (AntonovSuitProbe.facesSize)AntonovSuitProbe.facesSize.GetValues(typeof(AntonovSuitProbe.facesSize)).GetValue(m_specularSize.enumValueIndex));
-
-					//EditorGUILayout.PropertyField(m_specularSize, new GUIContent("Specular Face Size"));
+					m_target.diffuseSize = (AntonovSuitProbe.facesSize)EditorGUILayout.EnumPopup ("Diffuse Face Size", m_target.diffuseSize);
+					m_target.specularSize = (AntonovSuitProbe.facesSize)EditorGUILayout.EnumPopup ("Specular Face Size",m_target.specularSize);
 				EditorGUI.indentLevel -= 1;
 			}
 		if(m_target.isDX11 == false)
@@ -139,8 +68,7 @@ public class AntonovSuitProbeEditor : Editor
 			if(c_showSmoothEdge)
 			{
 				EditorGUI.indentLevel += 1;
-					EditorGUILayout.PropertyField(m_smoothEdge, new GUIContent("Edge Width"));
-					//EditorGUILayout.PropertyField(m_edgeScale, new GUIContent("Edge Scale"));
+					m_target.smoothEdge = EditorGUILayout.IntField("Edge Width", m_target.smoothEdge);
 				EditorGUI.indentLevel -= 1;
 			}
 		}
@@ -148,7 +76,6 @@ public class AntonovSuitProbeEditor : Editor
 		EditorGUI.indentLevel -= 1;
 
 		EditorGUILayout.BeginVertical();
-		//EditorGUILayout.PropertyField(m_bakeDirectAndIBL, new GUIContent("Bake IBL"));
 		if (GUILayout.Button("Bake Probe", buttonStyle))
 		{
 			m_target.bakeDirectAndIBL = false;
@@ -170,27 +97,18 @@ public class AntonovSuitProbeEditor : Editor
 		convolveStyle.fixedWidth = 128;
 		convolveStyle.margin = new RectOffset(8,0,0,0);
 		convolveStyle.padding = new RectOffset(8, 8, 16, 16);
-		//convolveStyle.stretchWidth = false;
-		//convolveStyle.stretchHeight = false;
 
 		EditorGUILayout.BeginHorizontal();
 
 			EditorGUILayout.BeginVertical();
 				EditorGUI.indentLevel += 1;
-
-				m_diffuseSamples.enumValueIndex = (int)(AntonovSuitProbe.qualitySamples)EditorGUILayout.EnumPopup("Diffuse Quality", (AntonovSuitProbe.qualitySamples)AntonovSuitProbe.qualitySamples.GetValues(typeof(AntonovSuitProbe.qualitySamples)).GetValue(m_diffuseSamples.enumValueIndex));
-
-				m_irradianceModel.enumValueIndex = (int)(AntonovSuitProbe.irradianceEnum)EditorGUILayout.EnumPopup("Diffuse Model :", (AntonovSuitProbe.irradianceEnum)AntonovSuitProbe.irradianceEnum.GetValues(typeof(AntonovSuitProbe.irradianceEnum)).GetValue(m_irradianceModel.enumValueIndex));
-
+					m_target.diffuseSamples = (AntonovSuitProbe.qualitySamples)EditorGUILayout.EnumPopup ("Diffuse Quality", m_target.diffuseSamples);
+					m_target.irradianceModel = (AntonovSuitProbe.irradianceEnum)EditorGUILayout.EnumPopup ("Diffuse Model :",m_target.irradianceModel);
 				EditorGUI.indentLevel -= 1;
 			EditorGUILayout.EndVertical();
 	
-			if (GUILayout.Button("Convolve Diffuse", convolveStyle))
-			{
-			
-				m_target.InitConvolveIrradianceCube();
-				
-			}
+		if (GUILayout.Button("Convolve Diffuse", convolveStyle))
+			m_target.InitConvolveIrradianceCube();
 
 		EditorGUILayout.EndHorizontal();
 
@@ -200,37 +118,56 @@ public class AntonovSuitProbeEditor : Editor
 
 		EditorGUILayout.BeginVertical();
 		EditorGUI.indentLevel += 1;
-
-		m_specularSamples.enumValueIndex = (int)(AntonovSuitProbe.qualitySamples)EditorGUILayout.EnumPopup("Specular Quality", (AntonovSuitProbe.qualitySamples)AntonovSuitProbe.qualitySamples.GetValues(typeof(AntonovSuitProbe.qualitySamples)).GetValue(m_specularSamples.enumValueIndex));
-
-			m_radianceModel.enumValueIndex = (int)(AntonovSuitProbe.radianceEnum)EditorGUILayout.EnumPopup("Specular Model :", (AntonovSuitProbe.radianceEnum)AntonovSuitProbe.radianceEnum.GetValues(typeof(AntonovSuitProbe.radianceEnum)).GetValue(m_radianceModel.enumValueIndex));
-
+			m_target.specularSamples = (AntonovSuitProbe.qualitySamples)EditorGUILayout.EnumPopup ("Specular Quality", m_target.specularSamples);
+			m_target.radianceModel = (AntonovSuitProbe.radianceEnum)EditorGUILayout.EnumPopup ("Specular Model :", m_target.radianceModel);
 		EditorGUI.indentLevel -= 1;
 		EditorGUILayout.EndVertical();
 
-			if (GUILayout.Button("Convolve Specular", convolveStyle))
-			{
-				
-				m_target.InitConvolveRadianceCube();
-				
-			}
+		if (GUILayout.Button("Convolve Specular", convolveStyle))
+			m_target.InitConvolveRadianceCube();
+
 		EditorGUILayout.EndHorizontal();
 	
 		EditorGUILayout.Space();
 		GUILayout.Label("Probe Settings", EditorStyles.boldLabel);
 		EditorGUILayout.Space();
-		
+
 		EditorGUILayout.BeginVertical();
 		EditorGUI.indentLevel += 1;
-		EditorGUILayout.PropertyField(m_Meshes, new GUIContent("Cubemap probe assigned objects"),true);
+		c_showMeshes = EditorGUILayout.Foldout(c_showMeshes, "Objects" );
+		if(c_showMeshes == true)
+		{
+		EditorGUILayout.BeginHorizontal();
+
+		for (int i = 0; i < m_target.Meshes.Count; i++)
+		{
+			m_target.Meshes[i] = (GameObject)EditorGUILayout.ObjectField( m_target.Meshes[i], typeof(GameObject), true);
+
+			if (GUILayout.Button("Remove", EditorStyles.miniButton, GUILayout.Width(50)) ) 
+			{
+				m_target.Meshes.RemoveAt(i);
+			}
+
+		}
+		EditorGUILayout.EndHorizontal();
+		EditorGUILayout.BeginHorizontal();
+		m_Meshes = (GameObject)EditorGUILayout.ObjectField( m_Meshes, typeof(GameObject), true);
+		if (GUILayout.Button("Add", EditorStyles.miniButton, GUILayout.Width(50)) ) 
+		{
+			if (m_Meshes) 
+			{
+				m_target.Meshes.Add(m_Meshes);
+				m_Meshes = null;
+			}
+		}
+			EditorGUILayout.EndHorizontal();
+		}
 		EditorGUI.indentLevel -= 1;
 		EditorGUILayout.EndVertical();
 
 		EditorGUILayout.Space();
-		//m_target.typeOfProjection = (AntonovSuitProbe.ProjectionType)EditorGUILayout.EnumPopup ("Cubemap Projection", m_target.typeOfProjection);
+		m_target.typeOfProjection = (AntonovSuitProbe.ProjectionType)EditorGUILayout.EnumPopup ("Cubemap Projection", m_target.typeOfProjection);
 
-		m_projectionType.enumValueIndex = (int)(AntonovSuitProbe.ProjectionType)EditorGUILayout.EnumPopup("Cubemap Projection", (AntonovSuitProbe.ProjectionType)AntonovSuitProbe.ProjectionType.GetValues(typeof(AntonovSuitProbe.ProjectionType)).GetValue(m_projectionType.enumValueIndex));
-	
 		if(m_target.typeOfProjection == AntonovSuitProbe.ProjectionType.SphereProjection)
 		{
 			c_showSphereProjection = true;
@@ -238,16 +175,7 @@ public class AntonovSuitProbeEditor : Editor
 			if(c_showSphereProjection == true)
 			{
 				EditorGUI.indentLevel += 1;
-				EditorGUILayout.PropertyField(m_cubemapRadius, new GUIContent("Cubemap Radius"));
-
-				EditorGUILayout.PropertyField(m_atten, new GUIContent("Use Attenuation"));
-				if(m_atten.boolValue == true )
-				{
-					EditorGUI.indentLevel += 1;
-					EditorGUILayout.PropertyField(m_attenRadius, new GUIContent("Attenuation Radius"));
-					EditorGUI.indentLevel -= 1;
-				}
-				EditorGUI.indentLevel -= 1;
+				m_target.probeRadius = EditorGUILayout.FloatField("Cubemap Radius", m_target.probeRadius);
 			}
 		}
 		if(m_target.typeOfProjection == AntonovSuitProbe.ProjectionType.BoxProjection)
@@ -257,16 +185,7 @@ public class AntonovSuitProbeEditor : Editor
 			if(c_showBoxProjection == true)
 			{
 				EditorGUI.indentLevel += 1;
-				EditorGUILayout.PropertyField(m_cubemapBoxSize, new GUIContent("Cubemap Box Size"));
-
-				EditorGUILayout.PropertyField(m_atten, new GUIContent("Use Attenuation"));
-				if(m_atten.boolValue == true )
-				{
-					EditorGUI.indentLevel += 1;
-					EditorGUILayout.PropertyField(m_attenBoxSize, new GUIContent("Attenuation Size"));
-					EditorGUI.indentLevel -= 1;
-				}
-				EditorGUI.indentLevel -= 1;
+				m_target.probeBoxSize = EditorGUILayout.Vector3Field("Cubemap Box Size", m_target.probeBoxSize);
 			}
 		}
 		if(m_target.typeOfProjection == AntonovSuitProbe.ProjectionType.InfiniteProjection)
@@ -278,36 +197,25 @@ public class AntonovSuitProbeEditor : Editor
 		EditorGUILayout.Space();
 
 		GUILayout.Label("Diffuse Cubemap");
+		EditorGUILayout.Space();
 		EditorGUILayout.BeginHorizontal();	
-			diffuseCubeObject = EditorGUILayout.ObjectField(m_target.diffuseCube, typeof(Cubemap), false, GUILayout.MinHeight(64), GUILayout.MinWidth(64), GUILayout.MaxWidth(64));
+			diffuseCubeObject = EditorGUILayout.ObjectField(m_target.diffuseCube, typeof(Cubemap), false);
 			m_target.diffuseCube = (Cubemap)diffuseCubeObject;
 
-		//Color myColor = m_target.diffuseCube.GetPixel(CubemapFace.NegativeX,m_target.diffuseSize,m_target.diffuseSize);
-	
-			EditorGUILayout.PropertyField(m_diffuseExposure, new GUIContent("Diffuse Exposure"));
+			m_target.diffuseExposure = EditorGUILayout.FloatField("Diffuse Exposure", m_target.diffuseExposure);
 		EditorGUILayout.EndHorizontal();
-
+		EditorGUILayout.Space();
 
 		GUILayout.Label("Specular Cubemap");
+		EditorGUILayout.Space();
 		EditorGUILayout.BeginHorizontal();
-			specularCubeObject = EditorGUILayout.ObjectField(m_target.specularCube, typeof(Cubemap), false, GUILayout.MinHeight(64), GUILayout.MinWidth(64), GUILayout.MaxWidth(64));
+			specularCubeObject = EditorGUILayout.ObjectField(m_target.specularCube, typeof(Cubemap), false);
 			m_target.specularCube = (Cubemap)specularCubeObject;
 			
-			EditorGUILayout.PropertyField(m_specularExposure, new GUIContent("Specular Exposure"));
-
+			m_target.specularExposure = EditorGUILayout.FloatField("Specular Exposure", m_target.specularExposure);
 		EditorGUILayout.EndHorizontal();
 
 		EditorGUILayout.Space();
-
-
-
-
-		if(GUI.changed)
-		{
-			//EditorUtility.SetDirty (target);
-		}
-	
-		m_AntonovSuitProbe.ApplyModifiedProperties();
 	}
 }
 #endif

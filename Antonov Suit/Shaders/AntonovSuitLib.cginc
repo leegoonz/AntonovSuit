@@ -151,4 +151,10 @@ float specularOcclusion( float3 N, float3 V, float Occlusion )
 	return lerp(pow(Occlusion, specularPow),1.0, s);
 }
 
+// Sébastien Lagarde and Charles de Rousiers "Moving Frostbite to Physically Based Rendering"
+float specularOcclusionRoughness( float NdotV , float Occlusion , float Roughness )
+{
+	return saturate (pow( NdotV + Occlusion , Roughness ) - 1 + Occlusion);
+}
+
 #endif

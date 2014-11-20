@@ -52,7 +52,7 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		LOD 200
 		
 		CGINCLUDE
-		#pragma target 3.0
+		#pragma target 5.0
 		
 		#ifdef SHADER_API_OPENGL	
 			#pragma glsl
@@ -65,8 +65,6 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		#include "UnityShaderVariables.cginc"
 
 		//ANTONOV SUIT STUFF
-		#pragma multi_compile ANTONOV_INFINITE_PROJECTION ANTONOV_SPHERE_PROJECTION ANTONOV_BOX_PROJECTION
-		#pragma multi_compile _ ANTONOV_CUBEMAP_ATTEN
 		
 		// Workflow
 		#define ANTONOV_SKIN

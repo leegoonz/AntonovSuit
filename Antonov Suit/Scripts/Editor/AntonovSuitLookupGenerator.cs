@@ -39,7 +39,7 @@ class AntonovSuitLookupGenerator : ScriptableWizard
 
 	public G_Enum G_Model = G_Enum.G_Schlick;
 
-    [MenuItem ("Antonov Suit/Lookup Generator")]
+	[MenuItem ("Antonov Suit/Antonov Suit Lookup Generator")]
     static void CreateWizard () 
 	{
 		ScriptableWizard.DisplayWizard<AntonovSuitLookupGenerator>("BRDF Lookup Generator", "Compute");

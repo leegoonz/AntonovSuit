@@ -5,34 +5,37 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 
-[CustomEditor(typeof(AntonovSuitSky))]
-public class AntonovSuitSkyEditor : Editor 
+[CustomEditor(typeof(AntonovSuitManager))]
+public class AntonovSuitManagerEditor : Editor 
 {
-	[MenuItem ("Antonov Suit/GameObject/Sky")]
-	public static  AntonovSuitSky addAntonovSuitSky() 
+	[MenuItem ("Antonov Suit/Antonov Suit Manager")]
+	public static  AntonovSuitManager addAntonovSuitManager() 
 	{
-		GameObject go = new GameObject("AntonovSuitSky");
-		go.AddComponent("AntonovSuitSky");
+		GameObject go = new GameObject("AntonovSuitManager");
+		go.AddComponent("AntonovSuitManager");
 
 		Selection.activeGameObject = go;
-		AntonovSuitSky s_AntonovSuitSky = go.GetComponent<AntonovSuitSky>();
+		AntonovSuitManager s_AntonovSuitManager = go.GetComponent<AntonovSuitManager>();
 		
 		Undo.RegisterCreatedObjectUndo(go, "Add Sky");
-		return s_AntonovSuitSky;
+		return s_AntonovSuitManager;
 	}
+	
+	AntonovSuitManager m_target;
 
-	AntonovSuitSky m_target;
-
-	List<GameObject> probes;
+	private List<GameObject> probes = new List<GameObject>();
 
 	private Object skyboxObject;
 	private Object diffuseCubeObject;
 	private Object specularCubeObject;
 
+	private bool c_showProbes = false;
+
 	void OnEnable()
 	{
-		probes = (target as AntonovSuitSky).probes;
-		m_target = (AntonovSuitSky)target;
+		probes = (target as AntonovSuitManager).probes;
+
+		m_target = (AntonovSuitManager)target;
 	}
 
 	public override void OnInspectorGUI()
@@ -45,23 +48,26 @@ public class AntonovSuitSkyEditor : Editor
 
 			EditorGUILayout.Space();
 			GUILayout.Label("Render Settings", EditorStyles.boldLabel);
-			//EditorGUILayout.Space();
 
+			EditorGUILayout.BeginVertical();
 			EditorGUI.indentLevel += 1;
 			//m_target.ambientSkyColor = EditorGUILayout.ColorField( "Ambient Sky Color", m_target.ambientSkyColor);
 			m_target.ambientColor = EditorGUILayout.ColorField( "Ambient Light", m_target.ambientColor);
 			skyboxObject = EditorGUILayout.ObjectField("Skybox Material", m_target.skyBoxMaterial, typeof(Material), false);
 			m_target.skyBoxMaterial = (Material)skyboxObject;
 			EditorGUI.indentLevel -= 1;
+			EditorGUILayout.EndVertical();
 
 			EditorGUILayout.Space();
 			GUILayout.Label("Probes", EditorStyles.boldLabel);
-			//EditorGUILayout.Space();
 
 			GUILayout.BeginHorizontal();
 			if (GUILayout.Button("Add Probe",buttonStyle))
 			{
+				
 				string probeName = "Probe_" + probes.Count.ToString();
+				//string probeName = "!Rename Me!";
+
 				GameObject newProbes = new GameObject(probeName);
 				
 				if (Selection.activeTransform != null)
@@ -69,37 +75,56 @@ public class AntonovSuitSkyEditor : Editor
 					newProbes.transform.parent = Selection.activeTransform;
 					newProbes.transform.position = newProbes.transform.parent.position;
 					newProbes.AddComponent<AntonovSuitProbe>();
+					newProbes.tag = "AntonovSuitProbe";
 					probes.Add(newProbes);
-					Undo.RegisterCreatedObjectUndo(newProbes, "Add Probe");
 				}
 			}
 			GUILayout.EndHorizontal();
-			GUILayout.BeginHorizontal();
-			if( GUILayout.Button("Remove Probe",buttonStyle))
+			
+			EditorGUILayout.BeginVertical();
+			EditorGUI.indentLevel += 1;
+			c_showProbes = EditorGUILayout.Foldout(c_showProbes, "Probe Objects");
+			if(	c_showProbes == true)
 			{
-				foreach( GameObject probe in probes )
-					DestroyImmediate( probe.gameObject, false );
-				probes.Clear();
+				for (int i = 0; i < m_target.probes.Count; i++)
+				{
+					EditorGUILayout.BeginHorizontal();
+					m_target.probes[i] = (GameObject)EditorGUILayout.ObjectField( m_target.probes[i], typeof(GameObject), true);
+
+					if (GUILayout.Button("Remove", EditorStyles.miniButton, GUILayout.Width(50)) )
+					{
+						DestroyImmediate( m_target.probes[i], false );
+						m_target.probes.RemoveAt(i);
+					}
+					EditorGUILayout.EndHorizontal();
+				}
 			}
-			GUILayout.EndHorizontal();
+			EditorGUI.indentLevel -= 1;
+			EditorGUILayout.EndVertical();
 
 			EditorGUILayout.Space();
 			GUILayout.Label("Cubemap Settings", EditorStyles.boldLabel);
-			//EditorGUILayout.Space();
 
+			EditorGUILayout.BeginVertical();
 			EditorGUI.indentLevel += 1;
-			m_target.diffuseExposure = EditorGUILayout.FloatField("Diffuse Exposure",m_target.diffuseExposure);
+			GUILayout.Label("Diffuse Cubemap");
+			EditorGUILayout.Space();
 			EditorGUILayout.BeginHorizontal();	
-			diffuseCubeObject = EditorGUILayout.ObjectField("Diffuse Cubemap",m_target.diffuseCube, typeof(Cubemap), false);
+			diffuseCubeObject = EditorGUILayout.ObjectField(m_target.diffuseCube, typeof(Cubemap), false);
 			m_target.diffuseCube = (Cubemap)diffuseCubeObject;
+			m_target.diffuseExposure = EditorGUILayout.FloatField("Diffuse Exposure",m_target.diffuseExposure);
 			EditorGUILayout.EndHorizontal();
+			EditorGUILayout.Space();
 
-			m_target.specularExposure = EditorGUILayout.FloatField("Specular Exposure",m_target.specularExposure);
+			GUILayout.Label("Specular Cubemap");
+			EditorGUILayout.Space();
 			EditorGUILayout.BeginHorizontal();
-			specularCubeObject = EditorGUILayout.ObjectField("Specular Cubemap",m_target.specularCube, typeof(Cubemap), false);
+			specularCubeObject = EditorGUILayout.ObjectField(m_target.specularCube, typeof(Cubemap), false);
 			m_target.specularCube = (Cubemap)specularCubeObject;
+			m_target.specularExposure = EditorGUILayout.FloatField("Specular Exposure",m_target.specularExposure);
 			EditorGUILayout.EndHorizontal();
 			EditorGUI.indentLevel -= 1;
+			EditorGUILayout.EndVertical();
 		}
 	}
 }

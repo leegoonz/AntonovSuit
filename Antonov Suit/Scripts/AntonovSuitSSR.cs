@@ -15,7 +15,8 @@ public class AntonovSuitSSR : MonoBehaviour
 	//public LayerMask Layer;
 	//public LayerMask gBufferLayer;
 	//public Texture lut;
-	private Texture Jitter;
+	private Texture jitter;
+	private Texture dither;
 
 	// SSR
 	public bool isMetallic = true;
@@ -25,7 +26,11 @@ public class AntonovSuitSSR : MonoBehaviour
 	//public GameObject probe;
 
 	//public int blurIteration = 1;
+
+	public float test1 =1;
+	public float test2 = 1;
 	public  float reflectionBlur = 1.0f;
+	public int blurIteration = 1;
 	public float reflectionIntensity = 1.0f;
 	public float maxRoughness = 1.0f;
 	public float reflectionBias = 0.06f;
@@ -42,6 +47,9 @@ public class AntonovSuitSSR : MonoBehaviour
 
 	private RenderTexture rtSpecularGBuffer;
 	private Material m_SpecularGBuffer;
+
+	private RenderTexture rtReflectionGBuffer;
+	private Material m_ReflectionGBuffer;
 
 	private RenderTexture rtSSR;
 	private Material m_SSR;
@@ -65,9 +73,15 @@ public class AntonovSuitSSR : MonoBehaviour
 	{
 		if(useSSR == true )
 		{
-			Jitter = Resources.Load("NOISE_128X128_JITTER",typeof(Texture)) as Texture;
+			jitter = Resources.Load("NOISE_128X128_JITTER",typeof(Texture)) as Texture;
 
-			rendererMaterial.SetTexture("_Jitter",Jitter);
+			dither = Resources.Load("NOISE_4X4_JITTER",typeof(Texture)) as Texture;
+
+			rendererMaterial.SetTexture("_Jitter",jitter);
+			rendererMaterial.SetTexture("_Dither",dither);
+
+			rendererMaterial.SetFloat ("_Test1", test1);
+			rendererMaterial.SetFloat ("_Test2", test2);
 
 			rendererMaterial.SetFloat ("_reflectionStrength", reflectionIntensity);
 
@@ -99,6 +113,7 @@ public class AntonovSuitSSR : MonoBehaviour
   	{
 		DestroyImmediate(rtNormalGBuffer);
 		DestroyImmediate(rtSpecularGBuffer);
+		DestroyImmediate(rtReflectionGBuffer);
 		DestroyImmediate(rtSSR);
 
 		rtNormalGBuffer = RenderTexture.GetTemporary(screenWidth,screenHeight,16,RenderTextureFormat.ARGBHalf);
@@ -107,7 +122,10 @@ public class AntonovSuitSSR : MonoBehaviour
 		rtSpecularGBuffer = RenderTexture.GetTemporary(screenWidth,screenHeight,16,RenderTextureFormat.ARGB32);
 		rtSpecularGBuffer.Create();
 
-		rtSSR = RenderTexture.GetTemporary(screenWidth/2,screenHeight/2,16,RenderTextureFormat.ARGB32);
+		rtReflectionGBuffer = RenderTexture.GetTemporary(screenWidth,screenHeight,16,RenderTextureFormat.ARGB32);
+		rtReflectionGBuffer.Create();
+
+		rtSSR = RenderTexture.GetTemporary(screenWidth,screenHeight,16,RenderTextureFormat.ARGB32);
 		rtSSR.Create();
   	}
 
@@ -171,9 +189,13 @@ public class AntonovSuitSSR : MonoBehaviour
 		gBufferCamera.targetTexture = rtSpecularGBuffer;
 		gBufferCamera.RenderWithShader(m_SpecularGBuffer.shader, "RenderType");
 
+		gBufferCamera.targetTexture = rtReflectionGBuffer;
+		gBufferCamera.RenderWithShader(m_ReflectionGBuffer.shader, "RenderType");
+
 		// G-Buffer
 		rendererMaterial.SetTexture ("_WorldNormal_GBUFFER", rtNormalGBuffer);
 		rendererMaterial.SetTexture ("_Specular_GBUFFER", rtSpecularGBuffer);
+		rendererMaterial.SetTexture ("_Reflection_GBUFFER", rtReflectionGBuffer);
 
 		if(useSSR == true )
 		{
@@ -184,8 +206,8 @@ public class AntonovSuitSSR : MonoBehaviour
 
 			if(doBlur == true)
 			{
-
-				RenderTexture blur = RenderTexture.GetTemporary( screenWidth/2, screenHeight/2,16,RenderTextureFormat.ARGB32);
+				/*
+				RenderTexture blur = RenderTexture.GetTemporary( screenWidth, screenHeight,16,RenderTextureFormat.ARGB32);
 
 				Graphics.Blit (rtSSR, blur, rendererMaterial, 3);
 				rendererMaterial.SetTexture ("_Reflection_Pass", blur);
@@ -193,8 +215,8 @@ public class AntonovSuitSSR : MonoBehaviour
 				Graphics.Blit (source,destination, rendererMaterial,1); // FragCompose
 
 				RenderTexture.ReleaseTemporary(blur);
+*/
 
-				/*
 				RenderTexture blurX = RenderTexture.GetTemporary( screenWidth, screenHeight,16,RenderTextureFormat.ARGB32);
 				RenderTexture blurY = RenderTexture.GetTemporary( screenWidth, screenHeight,16,RenderTextureFormat.ARGB32);
 
@@ -213,7 +235,7 @@ public class AntonovSuitSSR : MonoBehaviour
 				
 				RenderTexture.ReleaseTemporary(blurX);
 				RenderTexture.ReleaseTemporary(blurY);
-				*/
+
 
 			}
 			else
@@ -277,7 +299,22 @@ public class AntonovSuitSSR : MonoBehaviour
 	    {
 			Debug.LogError("Unable to find shader Hidden/G-Buffer/WorldNormal");
 	    }
-
+		if(isMetallic == true)
+		{
+			m_ReflectionGBuffer = new Material(Shader.Find("Hidden/G-Buffer/Metallic Reflection"));
+			if (m_ReflectionGBuffer == null)
+			{
+				Debug.LogError("Unable to find shader Hidden/G-Buffer/Metallic Reflection");
+			}
+		}
+		else
+		{
+			m_ReflectionGBuffer = new Material(Shader.Find("Hidden/G-Buffer/Reflection"));
+			if (m_ReflectionGBuffer == null)
+			{
+				Debug.LogError("Unable to find shader Hidden/G-Buffer/Reflection");
+			}
+		}
 		if(isMetallic == true)
 		{
 			m_SpecularGBuffer = new Material(Shader.Find("Hidden/G-Buffer/Metallic Specular"));
@@ -302,6 +339,7 @@ public class AntonovSuitSSR : MonoBehaviour
 		{
 			GUI.DrawTexture(new Rect(16, 16, 256, 256),rtNormalGBuffer);
 			GUI.DrawTexture(new Rect(16, 272, 256, 256),rtSpecularGBuffer);
+			GUI.DrawTexture(new Rect(16, 528, 256, 256),rtReflectionGBuffer);
 		}
 	}
 }

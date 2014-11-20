@@ -325,153 +325,141 @@ inline float4 ImportanceSampleGGX( float2 Xi, float Roughness, float3 N)
 	return float4((T * H.x) + (B * H.y) + (N * H.z), pdf);
 }
 
-#ifdef ANTONOV_IMPORTANCE_SAMPLING
-// we can get away with 32 samples with a 256x256 cubemap
-inline float calcLOD(int cubeSize, float pdf, int NumSamples)
+float4 sphereRay(float3 R, float4 worldPos,float4 cubemapPosScale)
 {
-	//float preCalcLod = log2( (size*size) / NumSamples);
-	//return 0.5 * preCalcLod - 0.5 * log2( pdf );
 
-	float lod = (0.5 * log2( (cubeSize*cubeSize)/float(NumSamples) ) + 2.0) - 0.5*log2(pdf); 
-	return lod;
+			float3 probePos = worldPos - cubemapPosScale.xyz;
+
+			// http://http.developer.nvidia.com/GPUGems/gpugems_ch19.html
+
+			float b = dot(R, probePos);
+
+			float c = dot(probePos, probePos);
+			float d = c - b * b;
+			float q  = sqrt( sqr(cubemapPosScale.w) - d ) - b;
+
+			R = worldPos + R * q - cubemapPosScale.xyz;
+
+			//R =  (1 / _cubemapScale) * probePos + R; 	// Lagarde 2012, "Image-based Lighting approaches and parallax-corrected cubemap"	
+
+			float probeLength = sqrt(c);
+			float normalizedProbeLength = saturate(probeLength / cubemapPosScale.w);
+
+			float alpha = 1.0 - smoothstep(.6, 1, normalizedProbeLength);
+
+			return float4(R,alpha);
 }
 
-// Brian Karis, Epic Games "Real Shading in Unreal Engine 4"
-float3 SpecularIBL( float Roughness, float3 R, uint NumSamples, uint cubeSize )
+float4 boxRay(float4x4 WorldToCube,float4x4 WorldToCubeInverse,float3 R, float4 worldPos, float3 cubemapBoxSize)
 {
-	float3 N = R;
-	float3 V = R;
-			 
-	float3 SampleColor = 0;
-	float TotalWeight = 0;
-	
-	for( uint i = 0; i < NumSamples; i++ )
-	{
-		float2 Xi = Hammersley( i, NumSamples ) + 1.e-6f;
-		
-		float4 H = float4(0,0,0,0);
+			// Lagarde 2012, "Image-based Lighting approaches and parallax-corrected cubemap"
+			float3 localPos = mul( WorldToCubeInverse, worldPos);
+			float3 localDir = mul( WorldToCube, float4(R,1));
 
-		#ifdef ANTONOV_BLINN
-			H += ImportanceSampleBlinn(Xi, Roughness, N);
-		#endif
-		#ifdef ANTONOV_GGX
-			H += ImportanceSampleGGX(Xi, Roughness, N);
-		#endif
+			float3 boxSize = cubemapBoxSize / 2;
+			float3 firstPlaneIntersect  = (boxSize - localPos) / localDir;
+			float3 secondPlaneIntersect = (-boxSize - localPos) / localDir;
+			float3 furthestPlane = max(firstPlaneIntersect, secondPlaneIntersect);
+			float distance = min(furthestPlane.x, min(furthestPlane.y, furthestPlane.z));
 
-		
-		float3 L = 2 * dot( V, H ) * H - V;
-			               
-	 	float NoL = saturate( dot( N, L ) );
-    
-		if( NoL > 0 )
-		{                                    
-			SampleColor += DecodeRGBMLinear(texCUBElod(_SpecCubeIBL, float4(L, calcLOD(cubeSize, H.w, NumSamples)))) * NoL;
-				                        
-			TotalWeight += NoL;
-		}  
-	}
-	
-	return SampleColor / TotalWeight;
+			R = localPos + R * distance;
+
+			//float alpha =  smoothstep(0, 1.0f, distance);
+			
+			float3 probePos = abs(localPos);
+			
+			float3 attenBoxSize = cubemapBoxSize / 2.0f + 0.25;
+			float3 attenInnerBoxSize = attenBoxSize - 1.0f / 2.0f + 0.25;
+			
+			float alpha = min(min( attenBoxSize.x - probePos.x , attenBoxSize.y - probePos.y ),  attenBoxSize.z - probePos.z );
+			alpha /= min( min( attenBoxSize.x - attenInnerBoxSize.x , attenBoxSize.y - attenInnerBoxSize.y ), attenBoxSize.z - attenInnerBoxSize.z );
+			alpha = saturate( alpha );
+			
+			return float4(R,alpha);
 }
-#endif
 
 float3 ApproximateSpecularIBL( float3 SpecularColor , float Roughness, float3 N, float3 V, float4 worldPos, float3 vN)
 {
 	float NoV = saturate( dot( N, V ) );
 
 	float3 R = 2 * dot( V, N ) * N - V;
-
-	float attenuation = 1;
-
-	#ifdef ANTONOV_SPHERE_PROJECTION
-		float3 probePos = _cubemapPos - worldPos;
-
-		// http://http.developer.nvidia.com/GPUGems/gpugems_ch19.html
-
-		float b = dot(R, probePos);
-
-		float c = dot(probePos, probePos);
-		float d = c - b * b;
-		float q  = b + sqrt( sqr(_cubemapScale) - d );
-
-		R = worldPos + R * q - _cubemapPos;
-
-		//R =  (1 / _cubemapScale) * probePos + R; 	// Lagarde 2012, "Image-based Lighting approaches and parallax-corrected cubemap"	
-
-		#ifdef ANTONOV_CUBEMAP_ATTEN
-			float attenRadius = _attenSphereRadius;
-			float attenInnerRadius = attenRadius-2.0f;
 		
-			attenuation =  1 - saturate(( sqrt( c ) - attenInnerRadius ) / ( attenRadius - attenInnerRadius ) );
-		#endif
-	#elif ANTONOV_BOX_PROJECTION
-		// Lagarde 2012, "Image-based Lighting approaches and parallax-corrected cubemap"
-		float3 rayLocalSpace = mul( _WorldToCube, float4(R,1));
-		float3 positionLocalSpace = mul( _WorldToCubeInverse, worldPos);
+	int numIndex = _NumIndex;
+	
+	float3 prefilteredColor = float3(0,0,0);
+	float3 projectedVector = float3(0,0,0);
+	float attenuation = 0;
 
-		float3 cubemapBoxSize = _cubemapBoxSize/2.0f;
-		
-		float3 boxSize = float3(cubemapBoxSize);
-		float3 firstPlaneIntersect  = (boxSize - positionLocalSpace) / rayLocalSpace;
-		float3 secondPlaneIntersect = (-boxSize - positionLocalSpace) / rayLocalSpace;
-		float3 furthestPlane = max(firstPlaneIntersect, secondPlaneIntersect);
-		float distance = min(furthestPlane.x, min(furthestPlane.y, furthestPlane.z));
-
-		R = positionLocalSpace + R * distance;
-		
-		#ifdef ANTONOV_CUBEMAP_ATTEN
-			float3 probePos = ( worldPos - _cubemapPos);
-			probePos = abs(probePos);
+	if (ANTONOV_PROJECTION == 0)
+	{
+		projectedVector = R;
+		attenuation = 1;
+	}
+	else if( ANTONOV_PROJECTION == 1)
+	{	
+		float4 sphereProjAlpha = sphereRay(R, worldPos,_cubemapPosScale);
+		projectedVector = sphereProjAlpha.xyz;
 			
-			float3 attenBoxSize = _attenBoxSize/2.0f;
-			float3 attenInnerBoxSize = attenBoxSize-4.0f/2.0f;
+		attenuation = sphereProjAlpha.a;
+	}
+	else if( ANTONOV_PROJECTION == 2)
+	{
+		float4 boxProjAlpha = boxRay( _WorldToCube, _WorldToCubeInverse, R, worldPos, _cubemapBoxSize);
 			
-			attenuation = min(min( attenBoxSize.x - probePos.x , attenBoxSize.y - probePos.y ),  attenBoxSize.z - probePos.z );
-			attenuation /= min( min( attenBoxSize.x - attenInnerBoxSize.x , attenBoxSize.y - attenInnerBoxSize.y ), attenBoxSize.z - attenInnerBoxSize.z );
-			attenuation = saturate( attenuation );
-		#endif
-	#endif
-
+		projectedVector = boxProjAlpha.xyz;
+		attenuation =  boxProjAlpha.a;
+	}
+	
 	int lod = _lodSpecCubeIBL;
-	
+
 	#ifdef SHADER_API_D3D9
-		R = fix_cube_lookup(R,Roughness,lod);
+		R = fix_cube_lookup(projectedVector,Roughness,lod);
 	#endif
 	
-	
-	float3 prefilteredColor = DecodeRGBMLinear(texCUBElod(_SpecCubeIBL,float4(R,Roughness * lod))) * attenuation;
-	#ifdef ANTONOV_IMPORTANCE_SAMPLING
-		prefilteredColor = SpecularIBL( Roughness, R, 256, 128 );
-	#endif
-	
-	
+	float horizon = 1;
 	#ifdef ANTONOV_HORYZON_OCCLUSION
 		// http://marmosetco.tumblr.com/post/81245981087
-		float horizon = saturate( 1 + _horyzonOcclusion * dot(R,vN));
+		horizon = saturate( 1 + _horyzonOcclusion * dot(projectedVector,vN));
 		horizon *= horizon;
-	
-		prefilteredColor *= horizon;
 	#endif
-	
-	float F = tex2D(_ENV_LUT, float2(NoV, Roughness)).x;
-	float G = tex2D(_ENV_LUT, float2(NoV, Roughness)).y;
-	
+		
+	float2 F_G = tex2D(_ENV_LUT, float2(NoV, Roughness));
 	#ifdef ANTONOV_SKIN
-		F = tex2D(_ENV_SKIN_LUT, float2(NoV, Roughness)).x;
-		G = tex2D(_ENV_SKIN_LUT, float2(NoV, Roughness)).y;
+		F_G = tex2D(_ENV_SKIN_LUT, float2(NoV, Roughness));
 	#endif
+
+	prefilteredColor = DecodeRGBMLinear(texCUBElod(_SpecCubeIBL,float4(projectedVector,Roughness * lod))) * attenuation;	
 	
-	return prefilteredColor * ( SpecularColor * F + G );
+	return prefilteredColor * horizon * ( SpecularColor * F_G.x + F_G.y );
 }
 
-float3 ApproximateDiffuseIBL(float3 N)
+float3 ApproximateDiffuseIBL(float3 N,float4 worldPos)
 {
-	float attenuation = 1;
 
-	float3 PrefilteredColor = DecodeRGBMLinear(texCUBE(_DiffCubeIBL,N)) * attenuation;
+//	float3 prefilteredColor = float3(0,0,0);
+//	float3 projectedVector = float3(0,0,0);
+//	float attenuation = 0;
 
-	return PrefilteredColor;
+//		if (ANTONOV_PROJECTION == 0)
+//		{
+//			projectedVector = N;
+//			attenuation = 1;
+//			prefilteredColor = DecodeRGBMLinear(texCUBE(_DiffCubeIBL,N));
+//		}
+//		else if( ANTONOV_PROJECTION == 1)
+//		{	
+//			float dist = distance(_cubemapPosScale.xyz, worldPos);
+//			float lambert = dot(N, normalize(_cubemapPosScale.xyz - worldPos))*0.5+0.5;
+//			
+//			if(dist < _cubemapPosScale.w && lambert > 0.0)
+//		 	{
+//				float falloff = 1.0 - clamp(dist/ _cubemapPosScale.w, 0.0, 1.0);
+//				attenuation = clamp(pow(falloff, 1.5) * lambert, 0.0, 1.0);
+//				prefilteredColor = DecodeRGBMLinear(texCUBE(_DiffCubeIBL,projectedVector)) * attenuation;
+//			}					
+//		}
+
+		return DecodeRGBMLinear(texCUBE(_DiffCubeIBL,N));
 }
-
 
 #endif

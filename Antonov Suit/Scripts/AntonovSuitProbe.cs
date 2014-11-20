@@ -10,15 +10,18 @@ using UnityEditor;
 using System.Collections.Generic;
 using System.IO;
 
-//[ExecuteInEditMode]
+[ExecuteInEditMode]
+[System.Serializable]
 public class AntonovSuitProbe : MonoBehaviour 
 {
+
 	private Shader HDRtoRGBM;
 
 	public string cubemapFolder = "Assets/Antonov Suit/Textures/Cubemaps/";
 	public string cubemapName = "Cube";
-	
-	[System.Serializable]
+
+	public int probeIndex = 0;
+
 	public enum facesSize
 	{
 		_64, 
@@ -29,9 +32,8 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	public facesSize diffuseSize = facesSize._64;
 
-	public facesSize specularSize = facesSize._256;
+	public facesSize specularSize = facesSize._128;
 
-	[System.Serializable]
 	public enum qualitySamples
 	{
 		Low,
@@ -39,18 +41,15 @@ public class AntonovSuitProbe : MonoBehaviour
 		High
 	};
 
-	public qualitySamples diffuseSamples = qualitySamples.Low;
+	public qualitySamples diffuseSamples = qualitySamples.High;
 
-	public qualitySamples specularSamples = qualitySamples.Low;
+	public qualitySamples specularSamples = qualitySamples.High;
 
 	public int smoothEdge = 4;
 
 	private Material[] m_materials;
 
-	//public int diffuseSamples = 32;
-	//public int specularSamples = 64;
-
-	public GameObject[] Meshes;
+	public List<GameObject> Meshes = new List<GameObject>();
 
 	private Cubemap emptyCube;
 	public Cubemap diffuseCube;
@@ -58,7 +57,6 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	private Camera cubeCamera; 
 
-	[System.Serializable]
 	public enum ProjectionType
 	{	
 		InfiniteProjection,
@@ -69,11 +67,8 @@ public class AntonovSuitProbe : MonoBehaviour
 	public ProjectionType typeOfProjection = ProjectionType.InfiniteProjection;
 
 	private Matrix4x4 probeMatrix;
-	
-	public bool useAtten;
 
 	public float probeRadius;
-	public float attenSphereRadius;
 
 	//Custom exposure control
 	public float diffuseExposure = 1;
@@ -87,8 +82,8 @@ public class AntonovSuitProbe : MonoBehaviour
 	public Vector3 cubePos;
 
 	//Importance sampled material for skybox
-	private Material convolveDiffuseSkybox;
-	private Material convolveSpecularSkybox;
+	private Material convolveDiffuseSkybox = null;
+	private Material convolveSpecularSkybox = null;
 
 	public int specularExponent = 1;
 
@@ -96,15 +91,14 @@ public class AntonovSuitProbe : MonoBehaviour
 	public bool isDX11;
 
 	//PREVIEW
-	public GameObject previewProbe;
-	public Material previewMaterial;
+	private GameObject previewProbe;
+	private Material previewMaterial;
 
 	//Always true
 	private bool RGBM = true;
 
 	public bool bakeDirectAndIBL = false;
 
-	[System.Serializable]
 	public enum radianceEnum
 	{
 		GGX,
@@ -113,7 +107,6 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	public radianceEnum radianceModel = radianceEnum.GGX;
 
-	[System.Serializable]
 	public enum irradianceEnum
 	{
 		SphereUniform,
@@ -121,7 +114,7 @@ public class AntonovSuitProbe : MonoBehaviour
 		HemisphereCosine,
 	};
 	
-	public irradianceEnum irradianceModel = irradianceEnum.SphereUniform;
+	public irradianceEnum irradianceModel = irradianceEnum.HemisphereCosine;
 
 	public bool goConvolveIrradiance = false;
 	public bool goConvolveRadiance = false;
@@ -146,20 +139,18 @@ public class AntonovSuitProbe : MonoBehaviour
 	{
 		if(diffuse)
 		{
-			cubemap.name = cubemapFolder + cubemapName + "@ " + this.gameObject.transform.position + "_DIFF.cubemap";
+			cubemap.name = cubemapFolder + cubemapName + "_" + this.gameObject.name + "_DIFF.cubemap";
 		}
 		else
 		{
-			cubemap.name = cubemapFolder + cubemapName + "@ " + this.gameObject.transform.position + "_SPEC.cubemap";
+			cubemap.name = cubemapFolder + cubemapName + "_" + this.gameObject.name + "_SPEC.cubemap";
 		}
 		return cubemap.name;
 	}
-
 	#endif
 
 	int CubeSizeSetup(bool isDiffuse)
 	{
-		
 		int result= 0;
 		
 		if( isDiffuse == true )
@@ -205,7 +196,6 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	public int CubeLodSetup()
 	{
-		
 		int result= 0;
 
 		if(specularSize == facesSize._64)
@@ -230,7 +220,6 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	int qualitySetup(bool isDiffuse)
 	{
-		
 		int result= 0;
 		
 		if( isDiffuse == true )
@@ -313,11 +302,9 @@ public class AntonovSuitProbe : MonoBehaviour
 		{
 			for (int x = 0; x < cubeSize; x++)
 			{
-
 				cubeCol = tex.GetPixel(cubeSize + x, (cubeSize - 1) - y);
 
 				cubemap.SetPixel(face, x, y, cubeCol);
-
 			}
 		}
 
@@ -410,11 +397,17 @@ public class AntonovSuitProbe : MonoBehaviour
 	{
 		if (SystemInfo.graphicsShaderLevel >= 30)
 			isDX11 = true;
+	}
 
+	void DoUpdatePreview()
+	{
 		previewMaterial = new Material( Shader.Find("Hidden/Antonov Suit/Probe" ));
-		//previewMaterial.hideFlags = HideFlags.HideAndDontSave;
-		//previewMaterial = Resources.Load("ProbePreview", typeof(Material)) as Material;
+		previewMaterial.hideFlags = HideFlags.HideAndDontSave;
 
+		previewMaterial.SetTexture("_DiffCubeIBL", diffuseCube);
+		previewMaterial.SetTexture("_SpecCubeIBL", specularCube);
+		previewMaterial.SetVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,0,0));
+		
 		if (previewProbe != null && previewProbe.GetComponent<MeshRenderer>())
 		{
 			previewProbe.GetComponent<MeshRenderer>().enabled = false;
@@ -425,30 +418,24 @@ public class AntonovSuitProbe : MonoBehaviour
 			previewProbe.name = this.name + "_Debug";
 			DestroyImmediate(previewProbe.GetComponent<SphereCollider>(), false);
 		}
-	}
 
-	void DoUpdatePreview()
-	{
-	
-
-		
 		MeshRenderer targetRenderer = previewProbe.GetComponent<MeshRenderer>();
 		targetRenderer.enabled = true;
 		targetRenderer.material = previewMaterial;
 		
 		targetRenderer.castShadows = false;
 		targetRenderer.receiveShadows = false;
-		
+
+		previewProbe.transform.parent = this.transform;
 		previewProbe.transform.position = transform.position;
 		previewProbe.transform.localScale = transform.localScale * 0.5f;
-		previewProbe.transform.parent = transform;
 		previewProbe.hideFlags = HideFlags.HideInHierarchy;
 	}
 
 	// Use this for initialization
 	void Start () 
 	{
-		DoSetup(); //While in game or build
+
 	}
 
 	#if UNITY_EDITOR
@@ -490,21 +477,19 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	void OnEnable()
 	{
-		DoUpdatePreview();
+		DoSetup(); //While in game or build
 	}
 
 	void OnDisable()
 	{
-
 		DestroyImmediate(previewMaterial, true);
+		//DestroyImmediate(previewProbe);
 	}
 
 	IEnumerator Bake()
 	{
-		
 		if (goBake && EditorApplication.isPlaying)
 		{
-
 			CameraSetup(false);
 			
 			StartCoroutine(CreateCubeMap(true));
@@ -514,19 +499,10 @@ public class AntonovSuitProbe : MonoBehaviour
 		Resources.UnloadUnusedAssets();
 		AssetDatabase.Refresh();
 		yield return new WaitForEndOfFrame();
-		
 	}
 
 	void CameraSetup(bool convolve)
 	{
-		
-		// Disable any renderers attached to this object which may get in the way of our camera
-		/*
-		if(renderer) 
-		{
-			renderer.enabled = false;
-		}
-		*/
 		// Create a camera that will be used to render the faces
 		GameObject go = new GameObject("CubemapCamera", typeof(Camera));
 		
@@ -578,12 +554,11 @@ public class AntonovSuitProbe : MonoBehaviour
 		}
 	}
 
+
 	IEnumerator ConvolveIrradiance()
 	{
-
 		if (goConvolveIrradiance && EditorApplication.isPlaying)
 		{
-
 			CameraSetup(true);
 
 			StartCoroutine(ConvolveDiffuseCubeMap()); 
@@ -591,26 +566,21 @@ public class AntonovSuitProbe : MonoBehaviour
 
 		Resources.UnloadUnusedAssets();
 		AssetDatabase.Refresh();
-		yield return new WaitForEndOfFrame();
-		
+		yield return new WaitForEndOfFrame();	
 	}
 
 	IEnumerator ConvolveRadiance()
 	{
-		
 		if (goConvolveRadiance && EditorApplication.isPlaying)
 		{
-			
 			CameraSetup(true);
 
 			StartCoroutine(ConvolveSpecularCubeMap()); 
-
 		}
 
 		Resources.UnloadUnusedAssets();
 		AssetDatabase.Refresh();
 		yield return new WaitForEndOfFrame();
-		
 	}
 
 	IEnumerator ConvolveDiffuseCubeMap()
@@ -805,13 +775,7 @@ public class AntonovSuitProbe : MonoBehaviour
 			SerializedObject serializedCubemap = new SerializedObject(specularCube);
 			SetLinearSpace(ref serializedCubemap, false);
 		}
-		/*
-		// Re-enable the renderer
-		if(renderer) 
-		{
-			renderer.enabled = true;
-		}
-*/
+
 		yield return StartCoroutine(CaptureFinished());
 	}
 	
@@ -822,85 +786,65 @@ public class AntonovSuitProbe : MonoBehaviour
 	}
 	#endif
 
-	// Update is called once per frame
-	void DoSecularLod()
+	void DoSpecularLod()
 	{
 		int lod = CubeLodSetup();
 		
 		specularExponent = lod;
-		
-		cubePos = this.transform.position;
 	}
 
 	void DoShaderUpdate()
 	{
-		foreach (GameObject cubeMeshes  in Meshes )
+		if(Meshes != null)
 		{
-			
-			Renderer[] renderers = cubeMeshes.GetComponentsInChildren<Renderer>();
-			
-			foreach (Renderer mr in renderers) 
-			{	
-				this.m_materials = mr.renderer.sharedMaterials;
-				//this.m_materials = mr.renderer.materials;
-				foreach( Material mat in this.m_materials ) 
-				{
-					switch(typeOfProjection)
+			foreach (GameObject cubeMeshes  in Meshes )
+			{
+				
+				Renderer[] renderers = cubeMeshes.GetComponentsInChildren<Renderer>();
+				
+				foreach (Renderer mr in renderers) 
+				{	
+					this.m_materials = mr.renderer.sharedMaterials;
+					foreach( Material mat in this.m_materials ) 
 					{
-					case ProjectionType.InfiniteProjection:
-						mat.DisableKeyword("ANTONOV_SPHERE_PROJECTION");
-						mat.DisableKeyword("ANTONOV_BOX_PROJECTION");
-						mat.EnableKeyword("ANTONOV_INFINITE_PROJECTION");
-						break;
-					case ProjectionType.SphereProjection:
-						mat.DisableKeyword("ANTONOV_INFINITE_PROJECTION");
-						mat.DisableKeyword("ANTONOV_BOX_PROJECTION");
-						mat.EnableKeyword("ANTONOV_SPHERE_PROJECTION");
-						mat.SetVector("_cubemapPos", cubePos);
-						mat.SetFloat("_cubemapScale", probeRadius);
-						if(useAtten == true)
+						switch(typeOfProjection)
 						{
-							mat.EnableKeyword("ANTONOV_CUBEMAP_ATTEN");
-							mat.SetFloat("_attenSphereRadius", attenSphereRadius);
+						case ProjectionType.InfiniteProjection:
+							mat.SetInt("ANTONOV_PROJECTION", 0);
+							
+							break;
+						case ProjectionType.SphereProjection:
+							mat.SetInt("ANTONOV_PROJECTION", 1);
+							mat.SetVector("_cubemapPosScale", new Vector4(this.transform.position.x, this.transform.position.y, this.transform.position.z, probeRadius));
+							
+							break;
+						case ProjectionType.BoxProjection:
+							mat.SetInt("ANTONOV_PROJECTION", 2);
+							
+							probeMatrix.SetTRS(this.transform.position, this.transform.rotation, Vector3.one);
+							probeMatrixTranspose = probeMatrix.transpose;
+							probeMatrixInverse = probeMatrix.inverse;
+							
+							mat.SetMatrix("_WorldToCube", probeMatrixTranspose);
+							mat.SetMatrix("_WorldToCubeInverse", probeMatrixInverse);
+							mat.SetVector("_cubemapBoxSize", probeBoxSize);
+							
+							break;
 						}
-						else
-						{
-							mat.DisableKeyword("ANTONOV_CUBEMAP_ATTEN");
-						}
-						break;
-					case ProjectionType.BoxProjection:
-						mat.DisableKeyword("ANTONOV_INFINITE_PROJECTION");
-						mat.DisableKeyword("ANTONOV_SPHERE_PROJECTION");
-						mat.EnableKeyword("ANTONOV_BOX_PROJECTION");
+
+						mat.SetInt("ANTONOV_IMPORTANCE_SAMPLING",0);
 						
-						probeMatrix.SetTRS(transform.position, transform.rotation, Vector3.one);
-						probeMatrixTranspose = probeMatrix.transpose;
-						probeMatrixInverse = probeMatrix.inverse;
+						mat.SetInt("_lodSpecCubeIBL", specularExponent);
 						
-						mat.SetMatrix("_WorldToCube",probeMatrixTranspose);
-						mat.SetMatrix("_WorldToCubeInverse",probeMatrixInverse);
-						mat.SetVector("_cubemapBoxSize", probeBoxSize);
-						if(useAtten == true)
-						{
-							mat.EnableKeyword("ANTONOV_CUBEMAP_ATTEN");
-							mat.SetVector("_attenBoxSize", attenBoxSize);
-						}
-						else
-						{
-							mat.DisableKeyword("ANTONOV_CUBEMAP_ATTEN");
-						}
-						break;
+						if(diffuseCube != null)
+							mat.SetTexture("_DiffCubeIBL", diffuseCube);
+						
+						if(specularCube != null)
+							mat.SetTexture("_SpecCubeIBL", specularCube);
+						
+						
+						mat.SetVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,1,1));
 					}
-					
-					mat.SetInt("_lodSpecCubeIBL", specularExponent);
-					
-					if(diffuseCube != null)
-						mat.SetTexture("_DiffCubeIBL", diffuseCube);
-					
-					if(specularCube != null)
-						mat.SetTexture("_SpecCubeIBL", specularCube);
-					
-					mat.SetVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,1,1));
 				}
 			}
 		}
@@ -913,10 +857,10 @@ public class AntonovSuitProbe : MonoBehaviour
 		goConvolveRadiance = false;
 	}
 
-	void Update() 
+	void LateUpdate() 
 	{
 
-		DoSecularLod(); //While in game or build
+		DoSpecularLod(); //While in game or build
 
 		#if UNITY_EDITOR
 		emptyCube = Resources.Load("emptyCube", typeof( Cubemap ) ) as Cubemap;
@@ -963,7 +907,6 @@ public class AntonovSuitProbe : MonoBehaviour
 		#endif
 
 		DoShaderUpdate();
-
 	}
 
 	void CleanUp()
@@ -979,83 +922,36 @@ public class AntonovSuitProbe : MonoBehaviour
 
 	void OnDestroy() 
 	{
+		DestroyImmediate(previewProbe);
 		DestroyImmediate(previewMaterial);
 		DestroyImmediate(convolveDiffuseSkybox);
 		DestroyImmediate(convolveSpecularSkybox);
-		DestroyImmediate(previewProbe);
 	}
 
 	void OnDrawGizmosSelected()
 	{
 		if (typeOfProjection == ProjectionType.SphereProjection) 
 		{
-			//Rotate the gizmos
-			Matrix4x4 matrix = new Matrix4x4();
-			matrix.SetTRS(this.transform.position, this.transform.rotation, this.transform.localScale);
-			Gizmos.matrix = matrix;
-
 			Gizmos.color = Color.green;
-			Gizmos.DrawWireSphere(Vector3.zero, probeRadius );
-			if(useAtten == true)
-			{
-				Gizmos.color = Color.yellow;
-				Gizmos.DrawWireSphere(Vector3.zero, attenSphereRadius );
-			}
+			Gizmos.DrawWireSphere(this.transform.position, probeRadius );
 		}
 		if (typeOfProjection == ProjectionType.BoxProjection) 
 		{
 			Gizmos.color = Color.blue;
-
-			//Rotate the gizmos
-			Matrix4x4 matrix = new Matrix4x4();
-			matrix.SetTRS(this.transform.position, this.transform.rotation, this.transform.localScale);
-			Gizmos.matrix = matrix;
-
-			//Gizmos.matrix = transform.localToWorldMatrix;
-			Gizmos.DrawWireCube(Vector3.zero, probeBoxSize );
-
-			if(useAtten == true)
-			{
-				Gizmos.color = Color.yellow;
-				Gizmos.DrawWireCube(Vector3.zero, attenBoxSize );
-			}
+			Gizmos.DrawWireCube(this.transform.position, probeBoxSize );
 		}
+
+		#if UNITY_EDITOR
+			DoUpdatePreview(); 
+		#endif
+		
 	}
 
 	void OnDrawGizmos()
 	{
-
-		DoReset();
-
-		DoSetup(); // While in Editor
-
-		DoUpdatePreview();
-
-		DoSecularLod(); 
-
-		DoShaderUpdate();
-
-		#if UNITY_EDITOR
-		previewMaterial.SetTexture("_DiffCubeIBL", diffuseCube);
-		previewMaterial.SetTexture("_SpecCubeIBL", specularCube);
-		previewMaterial.SetVector("_exposureIBL", new Vector4(specularExposure,diffuseExposure,0,0));
-		
-		if (EditorApplication.isPlaying)
-		{
-			if (previewProbe.GetComponent<MeshRenderer>().enabled)
-				previewProbe.GetComponent<MeshRenderer>().enabled = false;
-		}
-		else
-		{
-			
-			if (!previewProbe.GetComponent<MeshRenderer>().enabled)
-				previewProbe.GetComponent<MeshRenderer>().enabled = true;
-			
-		}
-		#endif
-
+		DestroyImmediate(previewProbe,true);
+		DestroyImmediate(previewMaterial,true);
 
 		Gizmos.DrawIcon(transform.position, "../Antonov Suit/Resources/probe.tga", true);
 	}
-
 }

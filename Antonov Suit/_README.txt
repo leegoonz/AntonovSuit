@@ -64,16 +64,13 @@ MicroBump_NORM 	: Micro detail en normal map.
 
 THE SKY TOOL // This tool is absolutely needed in your scene !
 
-To drop the sky tool into your scene search for the top menu called "Anotonov Suit" then look for the "Sky" object in "AntonovSuit/GameObject/Sky".
+To drop the sky tool into your scene search for the top menu called "Anotonov Suit" then look for the "AntonovSuit Manager" object in "AntonovSuit/AntonovSuit Manager".
 
 The sky tool allow you to spawn your probes in the scene, just hit the "Add Probe" button and it will add a probe. 
 You can also define a general diffuse and specular cubemap if no objects are assigned to a probe. You can control both diffuse and specular exposure and also the ambient light.
 It also feed all shaders LUT so you do not have to do it your self.
 
 THE PROBE TOOL
-
-To drop the probe tool into your scene search for the top menu called "Anotonov Suit" then look for the "Cubemap Probe" object in "AntonovSuit/GameObject/Cubemap Probe".
-Now you have an object called AntonovSuitProbe and if you select it you will see multiple options in the inspector.
 
 	BAKING SETTINGS
 
@@ -92,7 +89,7 @@ Now you have an object called AntonovSuitProbe and if you select it you will see
 	PROBE SETTINGS
 
 		In order to use the Antonov Suit shaders you need to assigned objects to the probe.
-		The probe supports sphere and box projection and you can activate an attenuation factor to it.
+		The probe supports sphere and box projection.
 		You will find "Diffuse Cubemap" and "Specular Cubemap" textures slot and exposure control of them.
 		
 Convolution are at its best state in DX11 and using Pro.

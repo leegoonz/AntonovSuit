@@ -36,7 +36,7 @@ float3 DiffuseIBL(float3 R, int NumSamples, int cubeSize )
 		
 		if( NoL > 0 )
 		{
-			SampleColor += DecodeRGBMLinear(texCUBElod(_DiffCubeIBL, float4(L.xyz,calcLOD(cubeSize, L.w, NumSamples)))) * NoL * PI;
+			SampleColor += DecodeRGBMLinear(texCUBElod(_DiffCubeIBL, float4(L.xyz,calcLOD(cubeSize, L.w, NumSamples)))) * NoL;
 			TotalWeight += NoL;
 		}
 	}

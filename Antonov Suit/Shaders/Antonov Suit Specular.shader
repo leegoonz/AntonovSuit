@@ -22,7 +22,7 @@ Shader "Antonov Suit/Specular Workflow/Specular"
 		_DiffCubeIBL ("Diffuse Cube", Cube) = "black" {}
 
 		_SpecCubeIBL ("Specular Cube", Cube) = "black" {}
-		//
+		
 		//_ENV_LUT ("Env BRDF LUT", 2D) = "white" {}
 	}
 	SubShader 

@@ -21,7 +21,9 @@
 			{
 			    float4	pos 		: POSITION;
 			    float4	lightDir	: TEXCOORD0;
-			    //float4  screenPos	: TEXCOORD0;
+			    #ifdef ANTONOV_PLANAR_REFLECTION
+			    	float4  screenPos	: TEXCOORD10;
+			    #endif
 			    float3	normal		: TEXCOORD1;
 			    float4	worldPos	: TEXCOORD2;
 			    float2	uv			: TEXCOORD3;
@@ -42,7 +44,9 @@
 			   	o.worldPos = mul(_Object2World, v.vertex);
 			   	o.uv = TRANSFORM_TEX (v.texcoord, _MainTex);
 			   	o.lightDir = float4(WorldSpaceLightDir(v.vertex), 0);
-			   	//o.screenPos = ComputeScreenPos(o.pos);
+			   	#ifdef ANTONOV_PLANAR_REFLECTION
+			  	 	o.screenPos = ComputeScreenPos(o.pos);
+			  	#endif
 			    o.normal =  mul(_Object2World, float4(v.normal, 0)).xyz;
 			    TANGENT_SPACE_ROTATION;
 				o.TtoW0 = mul(rotation, _Object2World[0].xyz * unity_Scale.w);
@@ -71,8 +75,10 @@
 				//Basic stuff
 				half3 white = half3(1.0,1.0,1.0);
 				half3 black = half3(0.0,0.0,0.0);
-			
-			    //float2 screenCoord = i.screenPos.xy / i.screenPos.w;
+				
+				#ifdef ANTONOV_PLANAR_REFLECTION
+			   		float2 screenCoord = i.screenPos.xy / i.screenPos.w;
+			    #endif
 			    
 			   // #if UNITY_UV_STARTS_AT_TOP
 				//if (_MainTex_TexelSize.y < 0)
@@ -398,13 +404,17 @@
 					specularIBL *= specularOcclusion(worldNormal, -viewDir, occlusion);
 				#endif
 				
+				#ifdef ANTONOV_GBUFFER_REFLECTION
+					return HDRtoRGBM(float4(specularIBL*occlusion,1));
+				#endif
+				
 				//DIFFUSE IBL
 				#ifdef ANTONOV_SKIN
-					half3 diffuseIBL = diffuseSkinIBL(float3(_tuneSkinCoeffX, _tuneSkinCoeffY, _tuneSkinCoeffZ), ApproximateDiffuseIBL(worldNormal).rgb, ApproximateDiffuseIBL(blurredNormal).rgb) * _exposureIBL.y;
+					half3 diffuseIBL = diffuseSkinIBL(float3(_tuneSkinCoeffX, _tuneSkinCoeffY, _tuneSkinCoeffZ), ApproximateDiffuseIBL(worldNormal,i.worldPos).rgb, ApproximateDiffuseIBL(blurredNormal,i.worldPos).rgb) * _exposureIBL.y;
 				#endif
 				
 				#if defined (ANTONOV_WORKFLOW_METALLIC) || defined(ANTONOV_WORKFLOW_SPECULAR)
-					half3 diffuseIBL = ApproximateDiffuseIBL(worldNormal) * _exposureIBL.y;
+					half3 diffuseIBL =ApproximateDiffuseIBL(worldNormal, i.worldPos)* _exposureIBL.y;
 				#endif
 
 				float3 backScattering = float3(0,0,0);
@@ -442,19 +452,31 @@
 				#endif
 											
 				#ifdef LIGHTMAP_ON
-					#ifdef  ANTONOV_INFINITE_PROJECTION 
 						// We normalize the cubemap with lightmap here for infinite projection.
-						diffuseIBL *= attenuatedLight;
-						specularIBL *= attenuatedLight;																																					
-					#endif
+						if (ANTONOV_PROJECTION == 0)
+							diffuseIBL *= attenuatedLight;
+						if (ANTONOV_PROJECTION == 0)
+							specularIBL *= attenuatedLight;																																					
 				#endif
+				
+				float3 reflection = float3(0,0,0);
+				
+				#ifdef ANTONOV_PLANAR_REFLECTION
+				float3 fresnel = F_LagardeSchlick(specular.rgb,roughness, NdotV);
+				reflection = tex2D(_ReflectionTex,(screenCoord+normal.xy*0.1)) * (1-roughness) * fresnel;
+				//reflection = tex2Dproj(_ReflectionTex,UNITY_PROJ_COORD(i.screenPos + float4(normal.xy*0.5,0,0))) * fresnel;
 
+				specularIBL = 0;
+				#endif
+				
 				#ifdef ANTONOV_METALLIC
 					diffuseIBL = half3(0,0,0);
 					ambient = half3(0,0,0);
 				#endif
 				
-				half3 diffuseOcclusion = coloredOcclusion(diffuse, occlusion);
+				half diffuseOcclusion = occlusion;
+				
+				half specularOcclusion = specularOcclusionRoughness(NdotV, occlusion, roughness);
 				
 				#ifdef ANTONOV_WORKFLOW_SPECULAR
 					diffuse.rgb *= saturate(1.0f - specular); // We balance the diffuse with specular intensity, The Order 1886
@@ -464,13 +486,13 @@
 					#ifdef ANTONOV_FWDBASE
 						frag.rgb = (diffuseDirect + (diffuseIBL + ambient) * diffuseOcclusion) * diffuse;
 						
-						frag.rgb += (specularDirect + specularIBL) * occlusion;
+						frag.rgb += (specularDirect + specularIBL + reflection) * specularOcclusion;
 						
 						frag.rgb += backScattering;
 					#else	
 						frag.rgb = diffuseDirect * diffuse;
 						
-						frag.rgb += specularDirect * occlusion;
+						frag.rgb += specularDirect * specularOcclusion;
 						
 						frag.rgb += backScattering;
 					#endif
@@ -483,6 +505,8 @@
 					
 					frag.rgb += illum;
 				#endif
+				
+				//frag.rgb = diffuseIBL;
 
 				return frag;
 			}
