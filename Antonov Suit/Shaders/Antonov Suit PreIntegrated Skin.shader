@@ -52,7 +52,7 @@ Shader "Antonov Suit/Skin/PreIntegrated Skin"
 		LOD 200
 		
 		CGINCLUDE
-		#pragma target 5.0
+		#pragma target 3.0
 		
 		#ifdef SHADER_API_OPENGL	
 			#pragma glsl
